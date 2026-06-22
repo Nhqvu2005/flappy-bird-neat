@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FlappyAI - NEAT training dashboard</title>
+<meta name="viewport" content="width=1100">
+<link rel="stylesheet" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<header>
+  <h1>FlappyAI</h1>
+  <p class="tagline">A neural network that learned to play Flappy Bird through 100 generations of evolution (NEAT).</p>
+</header>
+
+<main>
+  <section class="card">
+    <h2>1. Live demo (you vs AI)</h2>
+    <div class="game-row">
+      <canvas id="game" width="400" height="600"></canvas>
+      <div class="legend">
+        <p><b>Controls</b></p>
+        <p>Space / Click / Tap = flap</p>
+        <p>Press <b>A</b> = AI plays</p>
+        <p>Press <b>M</b> = Manual</p>
+        <p>Score: <span id="score">0</span></p>
+        <p>Best: <span id="best">0</span></p>
+        <p id="mode-label">Mode: Manual</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>2. Training progress</h2>
+    <canvas id="fitnessChart" height="140"></canvas>
+    <p class="caption" id="caption">Loading training log&hellip;</p>
+  </section>
+
+  <section class="card">
+    <h2>3. Winning brain</h2>
+    <p class="caption" id="winner-info">Loading&hellip;</p>
+    <svg id="nn" width="700" height="420"></svg>
+  </section>
+</main>
+
+<footer>
+  <p>Built with <code>neat-python</code> + Python game core + vanilla JS web demo.</p>
+</footer>
+
+<script src="flappy.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
