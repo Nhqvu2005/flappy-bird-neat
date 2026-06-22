@@ -4,7 +4,6 @@ A self-learning agent that **learns to play Flappy Bird from scratch** using the
 **NEAT (NeuroEvolution of Augmenting Topologies)** algorithm — no training data,
 no labels, just natural selection across generations.
 
-![demo](https://raw.githubusercontent.com/Nhqvu2005/FlappyAI/main/docs/demo.png)
 
 ## What you get
 
