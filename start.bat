@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-setlocal
+setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
 :MENU
@@ -9,60 +9,67 @@ echo   ================================================
 echo       FlappyAI - NEAT training dashboard
 echo   ================================================
 echo.
-echo   1. Install Python dependencies
-echo   2. Train NEAT (100 generations, ~5-15 min)
-echo   3. Replay best bird (Pygame window)
-echo   4. Open web dashboard (http://127.0.0.1:8765/)
-echo   5. Train + auto-open dashboard
+echo   1. Install Python dependencies (chay 1 lan)
+echo   2. Train NEAT (100 generations)
+echo   3. Xem AI choi lai (Pygame window)
+echo   4. Mo web dashboard (http://127.0.0.1:8765)
 echo   0. Exit
 echo.
-set /p choice=Select:
+set /p "choice=Chon so: "
 
 if "%choice%"=="1" goto INSTALL
 if "%choice%"=="2" goto TRAIN
 if "%choice%"=="3" goto REPLAY
 if "%choice%"=="4" goto WEB
-if "%choice%"=="5" goto TRAINWEB
 if "%choice%"=="0" exit /b
 
-echo Invalid choice.
+echo.
+echo Nhap sai roi. Nhap 1, 2, 3, 4 hoac 0.
 pause
 goto MENU
 
 :INSTALL
-echo Installing neat-python + pygame...
+echo.
+echo Dang cai dat neat-python + pygame...
+echo.
 python -m pip install -r requirements.txt
-echo Done.
+echo.
+echo Xong! Nhan phim bat ky de quay ve menu.
 pause
 goto MENU
 
 :TRAIN
-if not exist logs mkdir logs
-python train.py %2
-if errorlevel 1 (
-  echo Training failed.
+echo.
+if not exist logs\ mkdir logs
+echo Dang train NEAT trong %1 generations...
+echo Mac dinh: 100 generations, ~5-15 phut.
+echo.
+python train.py
+echo.
+if %errorlevel% neq 0 (
+    echo Loi! Kiem tra lai Python da cai dat chua.
 ) else (
-  echo Winner saved to logs\winner.pkl
+    echo Xong! Winner saved to logs\winner.pkl
 )
 pause
 goto MENU
 
 :REPLAY
+echo.
 if not exist logs\winner.pkl (
-  echo No winner found. Run training first (option 2).
-  pause
-  goto MENU
+    echo Chua co winner. Train truoc da (option 2).
+    pause
+    goto MENU
 )
 python replay.py
+pause
 goto MENU
 
 :WEB
+echo.
+echo Mo trinh duyet: http://127.0.0.1:8765
+echo Nhan Ctrl+C trong cua so nay de tat.
+echo.
 python server.py
-goto MENU
-
-:TRAINWEB
-start "flappyai-train" cmd /c "python train.py"
-echo Training started in a separate window.
-echo When winner is saved, run option 4 to open the dashboard.
 pause
 goto MENU
