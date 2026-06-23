@@ -3,7 +3,7 @@ Record a demo GIF of the AI playing Flappy Bird.
 Runs headless, captures frames, outputs a GIF ready for GitHub.
 
 Usage:
-    python record_demo.py [output.gif] [duration_seconds]
+    python record_demo.py [output.gif] [duration_seconds] [seed]
 """
 import sys
 import os
@@ -64,6 +64,7 @@ def draw_frame(draw, game, frame_idx):
 def main():
     output_path = sys.argv[1] if len(sys.argv) > 1 else "docs/demo.gif"
     duration = float(sys.argv[2]) if len(sys.argv) > 2 else 15.0
+    seed = int(sys.argv[3]) if len(sys.argv) > 3 else 12345
 
     from train import WINNER_DIR, CONFIG_PATH
     import pickle
@@ -87,8 +88,8 @@ def main():
     net = neat.nn.FeedForwardNetwork.create(winner, config)
 
     # Record frames
-    print(f"Recording {duration}s of AI gameplay...")
-    game = Game(seed=12345)
+    print(f"Recording {duration}s of AI gameplay on seed {seed}...")
+    game = Game(seed=seed)
     frames = []
     max_frames = int(60 * duration)
     prev_out = 0.0

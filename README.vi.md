@@ -13,7 +13,7 @@
 <p align="center">
   <img src="docs/demo.gif" alt="Flappy AI Demo" width="300">
   <br>
-  <em>AI tự động chơi Flappy Bird — đạt 42 cột trung bình (gen 171)</em>
+  <em>AI tự động chơi Flappy Bird — đạt 27 cột trung bình (gen 140)</em>
 </p>
 
 ---
@@ -338,13 +338,13 @@ Có thể thiết lập GitHub Action train tự động hàng ngày:
 
 | Metric | Random seeds | Fixed seeds (v1) | **Center bonus + cooldown** | Mô tả |
 |---|---|---|---|---|
-| Best score (avg 6 runs) | 22.33 | 29.00 | **42.00** | Số cột trung bình |
-| Best generation | gen 168 | gen 158 | **gen 171** | Gen đạt best |
-| Winner hidden nodes | 1 | 8 | **~15** | Độ phức tạp mạng |
-| Winner fitness | ~1100 | ~1821 | **~2981** | Fitness cao nhất |
+| Best score (avg 6 runs) | 22.33 | 29.00 | **27.33** | Số cột trung bình |
+| Best generation | gen 168 | gen 158 | **gen 140** | Gen đạt best |
+| Winner hidden nodes | 1 | 8 | **1** | Độ phức tạp mạng |
+| Winner fitness | ~1100 | ~1821 | **~1929** | Fitness cao nhất |
 | Validation (10 seeds) | 3.7 avg | 7.0 avg | **19.8 avg** | Trung bình 10 seed lạ |
 | Gen để ổn định > 20 pipes | ~120 | ~80 | **~37** | Tốc độ hội tụ |
-| Chất lượng bay | Rung lắc liên tục | Ổn định cơ bản | **Mượt, căn giữa gap** | Đụng cột trên/dưới |
+| Chất lượng bay | Rung lắc liên tục | Ổn định cơ bản | **Mượt, có cooldown** | Đụng cột trên/dưới |
 
 ### Kết luận
 
@@ -352,8 +352,9 @@ Có thể thiết lập GitHub Action train tự động hàng ngày:
   công bằng, tăng tốc hội tụ đáng kể.
 - **Center bonus** khuyến khích chim căn giữa khe hở, giảm đụng cột.
 - **Flap cooldown** ngăn chim bay vọt lên quá nhanh trong khi vẫn giữ continuous flap.
+- **Continuous flap + cooldown** tạo ra mạng neural robust hơn, generalize tốt hơn trên seed lạ.
 - `pop_size=400` và `num_runs=6` là cân bằng tốt giữa tốc độ và chất lượng.
-- **pop_size=400** + species đa dạng (lên đến **44 species** cuối gen)
+- **pop_size=400** + species đa dạng (lên đến **22 species** cuối gen)
   giúp khám phá không gian giải pháp rộng hơn, tránh local optimum.
 
 ---
