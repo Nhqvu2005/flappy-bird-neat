@@ -1,4 +1,4 @@
-# 🐤 FlappyAI — NEAT Neuroevolution tự học chơi Flappy Bird
+# FlappyAI — NEAT Neuroevolution tự học chơi Flappy Bird
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://python.org)
 [![NEAT](https://img.shields.io/badge/NEAT-NeuroEvolution-brightgreen)](https://neat-python.readthedocs.io/)
@@ -8,7 +8,7 @@
 
 ---
 
-## 📸 Demo
+## Demo
 
 <p align="center">
   <img src="docs/demo.gif" alt="Flappy AI Demo" width="300">
@@ -18,37 +18,37 @@
 
 ---
 
-## 🎯 Mục lục
+## Mục lục
 
-- [Tổng quan](#-tổng-quan)
-- [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)
-- [Cách hoạt động](#-cách-hoạt-động)
-- [Hướng dẫn train](#-hướng-dẫn-train)
-- [Tinh chỉnh thông số](#-tinh-chỉnh-thông-số-cho-độ-chính-xác-tốt-hơn)
-- [Phương án triển khai](#-phương-án-triển-khai)
-- [Kết quả thực nghiệm](#-kết-quả-thực-nghiệm)
-- [Cấu trúc thư mục](#-cấu-trúc-thư-mục)
-- [FAQ & Troubleshooting](#-faq--troubleshooting)
+- [Tổng quan](#tổng-quan)
+- [Kiến trúc hệ thống](#kiến-trúc-hệ-thống)
+- [Cách hoạt động](#cách-hoạt-động)
+- [Hướng dẫn train](#hướng-dẫn-train)
+- [Tinh chỉnh thông số](#tinh-chỉnh-thông-số-cho-độ-chính-xác-tốt-hơn)
+- [Phương án triển khai](#phương-án-triển-khai)
+- [Kết quả thực nghiệm](#kết-quả-thực-nghiệm)
+- [Cấu trúc thư mục](#cấu-trúc-thư-mục)
+- [FAQ & Troubleshooting](#faq--troubleshooting)
 
 ---
 
-## 🔭 Tổng quan
+## Tổng quan
 
 Dự án này sử dụng thuật toán **NEAT (NeuroEvolution of Augmenting Topologies)** để huấn luyện
 một mạng neural điều khiển chim Flappy Bird. Điểm đặc biệt:
 
 | Tính năng | Mô tả |
 |---|---|
-| **🧬 Không cần mạng thiết kế sẵn** | NEAT tự động thêm/xóa node hidden khi cần |
-| **🎮 Game engine thuần Python** | Headless, chạy được không cần GPU |
-| **📊 Dashboard web real-time** | Biểu đồ fitness, mạng neural, chơi thử AI/manual |
-| **🎥 Replay với Pygame** | Xem AI chơi + topology mạng + biểu đồ fitness lịch sử |
-| **🧪 So sánh công bằng giữa các genome** | Fixed seeds mỗi generation — tất cả genome đối mặt cùng layout |
-| **🏆 Lưu genome tốt nhất mọi thời đại** | Không chỉ winner cuối cùng — giữ lại best-ever qua generations |
+| **Không cần mạng thiết kế sẵn** | NEAT tự động thêm/xóa node hidden khi cần |
+| **Game engine thuần Python** | Headless, chạy được không cần GPU |
+| **Dashboard web real-time** | Biểu đồ fitness, mạng neural, chơi thử AI/manual |
+| **Replay với Pygame** | Xem AI chơi + topology mạng + biểu đồ fitness lịch sử |
+| **So sánh công bằng giữa các genome** | Fixed seeds mỗi generation — tất cả genome đối mặt cùng layout |
+| **Lưu genome tốt nhất mọi thời đại** | Không chỉ winner cuối cùng — giữ lại best-ever qua generations |
 
 ---
 
-## 🏗 Kiến trúc hệ thống
+## Kiến trúc hệ thống
 
 ```
                     ┌──────────────────────┐
@@ -90,7 +90,7 @@ một mạng neural điều khiển chim Flappy Bird. Điểm đặc biệt:
 
 ---
 
-## 🧠 Cách hoạt động
+## Cách hoạt động
 
 ### Mạng neural
 
@@ -150,7 +150,7 @@ _GEN_SEED_OFFSET = gen * 100 + 1
 
 ---
 
-## 🚀 Hướng dẫn train
+## Hướng dẫn train
 
 ### Yêu cầu
 
@@ -188,7 +188,7 @@ python replay.py
 
 ---
 
-## ⚙️ Tinh chỉnh thông số (cho độ chính xác tốt hơn)
+## Tinh chỉnh thông số (cho độ chính xác tốt hơn)
 
 ### 1. Cấu hình NEAT (`config-feedforward.txt`)
 
@@ -268,7 +268,7 @@ Nhớ cập nhật `num_inputs = 6` trong `config-feedforward.txt`.
 
 ---
 
-## 📡 Phương án triển khai
+## Phương án triển khai
 
 ### 1. Local Development (mặc định)
 
@@ -334,7 +334,7 @@ Có thể thiết lập GitHub Action train tự động hàng ngày:
 
 ---
 
-## 📊 Kết quả thực nghiệm
+## Kết quả thực nghiệm
 
 | Metric | Random seeds | Fixed seeds (v1) | **Center bonus + cooldown** | Mô tả |
 |---|---|---|---|---|
@@ -359,37 +359,37 @@ Có thể thiết lập GitHub Action train tự động hàng ngày:
 
 ---
 
-## 📁 Cấu trúc thư mục
+## Cấu trúc thư mục
 
 ```
 FlappyAI/
-├── game.py                   # 🎮 Flappy Bird engine (headless)
-├── train.py                  # 🧬 NEAT training script
-├── replay.py                 # 🎥 Pygame viewer
-├── server.py                 # 🌐 Web server + API
-├── record_demo.py            # 🎬 Headless GIF recorder
-├── config-feedforward.txt    # ⚙️ NEAT hyperparameters
-├── requirements.txt          # 📦 Python dependencies
-├── start.bat                 # 🪟 Windows menu
-├── logs/                     # 📁 Runtime outputs
+├── game.py                   # Flappy Bird engine (headless)
+├── train.py                  # NEAT training script
+├── replay.py                 # Pygame viewer
+├── server.py                 # Web server + API
+├── record_demo.py            # Headless GIF recorder
+├── config-feedforward.txt    # NEAT hyperparameters
+├── requirements.txt          # Python dependencies
+├── start.bat                 # Windows menu
+├── logs/                     # Runtime outputs
 │   ├── training.jsonl        #   Per-generation log
 │   ├── winner.pkl            #   Best genome (pickle)
 │   └── winner_net.json       #   Best network (JSON)
-├── docs/                     # 📁 Documentation assets
+├── docs/                     # Documentation assets
 │   └── demo.gif              #   Demo GIF
-├── web/                      # 🌐 Dashboard frontend
+├── web/                      # Dashboard frontend
 │   ├── index.html
 │   ├── style.css
 │   ├── flappy.js             #   Game engine (JS)
 │   └── app.js                #   Chart.js + NN viz + player
-├── README.md                 # 📘 English version
-├── README.vi.md              # 📘 This file (Vietnamese)
+├── README.md                 # English version
+├── README.vi.md              # This file (Vietnamese)
 └── LICENSE                   # MIT
 ```
 
 ---
 
-## ❓ FAQ & Troubleshooting
+## FAQ & Troubleshooting
 
 ### "Training quá chậm"
 
@@ -425,7 +425,7 @@ python server.py 8766
 
 ### "Cần cải thiện score"
 
-Xem [Tinh chỉnh thông số](#-tinh-chỉnh-thông-số-cho-độ-chính-xác-tốt-hơn) ở trên.
+Xem [Tinh chỉnh thông số](#tinh-chỉnh-thông-số-cho-độ-chính-xác-tốt-hơn) ở trên.
 
 ### "Muốn xem network topology"
 
@@ -434,15 +434,15 @@ Hoặc mở `logs/winner_net.json` bằng text editor.
 
 ---
 
-## 📜 License
+## License
 
 MIT — xem [LICENSE](LICENSE).
 
-## 👨‍💻 Tác giả
+## Tác giả
 
 **Nhqvu2005** — [GitHub](https://github.com/Nhqvu2005)
 
-## 🙏 Credits
+## Credits
 
 - [NEAT-Python](https://neat-python.readthedocs.io/) — thư viện NEAT
 - [Kenneth O. Stanley](https://en.wikipedia.org/wiki/Neuroevolution_of_augmenting_topologies) — thuật toán NEAT

@@ -1,4 +1,4 @@
-# 🐤 FlappyAI — Self-learning Flappy Bird Agent
+# FlappyAI — Self-learning Flappy Bird Agent
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://python.org)
 [![NEAT](https://img.shields.io/badge/NEAT-NeuroEvolution-brightgreen)](https://neat-python.readthedocs.io/)
@@ -8,7 +8,7 @@
 
 ---
 
-## 📸 Demo
+## Demo
 
 <p align="center">
   <img src="docs/demo.gif" alt="Flappy AI Demo" width="300">
@@ -18,37 +18,37 @@
 
 ---
 
-## 🎯 Table of Contents
+## Table of Contents
 
-- [Overview](#-overview)
-- [System Architecture](#-system-architecture)
-- [How It Works](#-how-it-works)
-- [Training Guide](#-training-guide)
-- [Hyperparameter Tuning](#-hyperparameter-tuning-for-better-accuracy)
-- [Deployment Options](#-deployment-options)
-- [Experimental Results](#-experimental-results)
-- [Project Structure](#-project-structure)
-- [FAQ & Troubleshooting](#-faq--troubleshooting)
+- [Overview](#overview)
+- [System Architecture](#system-architecture)
+- [How It Works](#how-it-works)
+- [Training Guide](#training-guide)
+- [Hyperparameter Tuning](#hyperparameter-tuning-for-better-accuracy)
+- [Deployment Options](#deployment-options)
+- [Experimental Results](#experimental-results)
+- [Project Structure](#project-structure)
+- [FAQ & Troubleshooting](#faq--troubleshooting)
 
 ---
 
-## 🔭 Overview
+## Overview
 
 This project uses the **NEAT (NeuroEvolution of Augmenting Topologies)** algorithm to evolve
 a neural network that controls a Flappy Bird. Key highlights:
 
 | Feature | Description |
 |---|---|
-| **🧬 No hand-engineered network** | NEAT automatically adds/removes hidden nodes as needed |
-| **🎮 Pure-Python game engine** | Headless, runs without GPU |
-| **📊 Real-time web dashboard** | Fitness chart, neural network viz, playable AI/manual demo |
-| **🎥 Pygame replay** | Watch the AI with live topology + historical fitness chart |
-| **🧪 Fair genome comparison** | Fixed seeds per generation — all genomes face the same layouts |
-| **🏆 All-time best genome tracking** | Saves the best-ever genome, not just the final generation |
+| **No hand-engineered network** | NEAT automatically adds/removes hidden nodes as needed |
+| **Pure-Python game engine** | Headless, runs without GPU |
+| **Real-time web dashboard** | Fitness chart, neural network viz, playable AI/manual demo |
+| **Pygame replay** | Watch the AI with live topology + historical fitness chart |
+| **Fair genome comparison** | Fixed seeds per generation — all genomes face the same layouts |
+| **All-time best genome tracking** | Saves the best-ever genome, not just the final generation |
 
 ---
 
-## 🏗 System Architecture
+## System Architecture
 
 ```
                     ┌──────────────────────┐
@@ -90,7 +90,7 @@ a neural network that controls a Flappy Bird. Key highlights:
 
 ---
 
-## 🧠 How It Works
+## How It Works
 
 ### Neural Network
 
@@ -150,7 +150,7 @@ _GEN_SEED_OFFSET = gen * 100 + 1
 
 ---
 
-## 🚀 Training Guide
+## Training Guide
 
 ### Prerequisites
 
@@ -188,7 +188,7 @@ python replay.py
 
 ---
 
-## ⚙️ Hyperparameter Tuning (for Better Accuracy)
+## Hyperparameter Tuning (for Better Accuracy)
 
 ### 1. NEAT Config (`config-feedforward.txt`)
 
@@ -267,7 +267,7 @@ Update `num_inputs = 6` in `config-feedforward.txt`.
 
 ---
 
-## 📡 Deployment Options
+## Deployment Options
 
 ### 1. Local Development (default)
 
@@ -333,7 +333,7 @@ Set up automated daily training:
 
 ---
 
-## 📊 Experimental Results
+## Experimental Results
 
 | Metric | Random seeds | Fixed seeds (v1) | **Center bonus + cooldown** | Description |
 |---|---|---|---|---|
@@ -358,37 +358,37 @@ Set up automated daily training:
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 FlappyAI/
-├── game.py                   # 🎮 Flappy Bird engine (headless)
-├── train.py                  # 🧬 NEAT training script
-├── replay.py                 # 🎥 Pygame viewer
-├── server.py                 # 🌐 Web server + API
-├── record_demo.py            # 🎬 Headless GIF recorder
-├── config-feedforward.txt    # ⚙️ NEAT hyperparameters
-├── requirements.txt          # 📦 Python dependencies
-├── start.bat                 # 🪟 Windows menu
-├── logs/                     # 📁 Runtime outputs
+├── game.py                   # Flappy Bird engine (headless)
+├── train.py                  # NEAT training script
+├── replay.py                 # Pygame viewer
+├── server.py                 # Web server + API
+├── record_demo.py            # Headless GIF recorder
+├── config-feedforward.txt    # NEAT hyperparameters
+├── requirements.txt          # Python dependencies
+├── start.bat                 # Windows menu
+├── logs/                     # Runtime outputs
 │   ├── training.jsonl        #   Per-generation log
 │   ├── winner.pkl            #   Best genome (pickle)
 │   └── winner_net.json       #   Best network (JSON)
-├── docs/                     # 📁 Documentation assets
+├── docs/                     # Documentation assets
 │   └── demo.gif              #   Demo GIF
-├── web/                      # 🌐 Dashboard frontend
+├── web/                      # Dashboard frontend
 │   ├── index.html
 │   ├── style.css
 │   ├── flappy.js             #   Game engine (JS)
 │   └── app.js                #   Chart.js + NN viz + player
-├── README.md                 # 📘 This file (English)
-├── README.vi.md              # 📘 Vietnamese version
+├── README.md                 # This file (English)
+├── README.vi.md              # Vietnamese version
 └── LICENSE                   # MIT
 ```
 
 ---
 
-## ❓ FAQ & Troubleshooting
+## FAQ & Troubleshooting
 
 ### "Training is too slow"
 
@@ -424,7 +424,7 @@ python server.py 8766
 
 ### "Want to improve the score"
 
-See [Hyperparameter Tuning](#-hyperparameter-tuning-for-better-accuracy) above.
+See [Hyperparameter Tuning](#hyperparameter-tuning-for-better-accuracy) above.
 
 ### "Want to see the network topology"
 
@@ -433,15 +433,15 @@ Or open `logs/winner_net.json` in any text editor.
 
 ---
 
-## 📜 License
+## License
 
 MIT — see [LICENSE](LICENSE).
 
-## 👨‍💻 Author
+## Author
 
 **Nhqvu2005** — [GitHub](https://github.com/Nhqvu2005)
 
-## 🙏 Credits
+## Credits
 
 - [NEAT-Python](https://neat-python.readthedocs.io/) — NEAT library
 - [Kenneth O. Stanley](https://en.wikipedia.org/wiki/Neuroevolution_of_augmenting_topologies) — NEAT algorithm
