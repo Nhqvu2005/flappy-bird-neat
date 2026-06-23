@@ -13,7 +13,7 @@
 <p align="center">
   <img src="docs/demo.gif" alt="Flappy AI Demo" width="300">
   <br>
-  <em>AI tự động chơi Flappy Bird — đạt 42 cột trung bình (gen 329)</em>
+  <em>AI tự động chơi Flappy Bird — trung bình 22.2 cột (10 seed lạ), tối đa 42 cột</em>
 </p>
 
 ---
@@ -109,17 +109,26 @@ Mỗi con chim được điều khiển bởi một mạng feedforward với:
 **1 output**: Giá trị trong [-1, 1] — chim đập cánh khi output **vượt ngưỡng 0.5** (continuous flap).
 
 **Hidden nodes**: Không có sẵn ban đầu — NEAT tự động thêm node hidden qua đột biến
-`node_add_prob=0.2`. Topology tiến hóa tự nhiên.
+`node_add_prob=0.3`. Topology tiến hóa tự nhiên.
 
-### Flap Cooldown
+> **Lưu ý**: NEAT thường cắt bỏ kết nối `pipe_dx`, nên chim có thể không "thấy" cột đang đến gần. Hãy tăng `conn_add_prob` nếu muốn khắc phục.
 
-Cơ chế chờ 3 frame giữa các lần đập cánh để tránh bay vọt lên như rocket:
+### Cơ chế đập cánh
 
-```
-Frame:   1  2  3  4  5  6  7  8  9
-Output:  0.7 0.8 0.6 0.9 0.8 0.7 0.6 0.8 0.4
-Flap:    có không không có không không không có không
-```
+Hai phương pháp đã được thử nghiệm:
+
+1. **Continuous flap** (hiện tại): `flap = out > 0.5`, với **FLAP_COOLDOWN=3** frame trong game.py.
+   - Cơ chế chờ 3 frame giữa các lần đập cánh để tránh bay vọt lên như rocket:
+   ```
+   Frame:   1  2  3  4  5  6  7  8  9
+   Output:  0.7 0.8 0.6 0.9 0.8 0.7 0.6 0.8 0.4
+   Flap:    có không không có không không không có không
+   ```
+   - Kết quả: **29.5 cột** (500 gen), validation **22.2 cột**
+
+2. **Rising-edge flap** (thử nghiệm): `flap = prev_out <= 0.5 < out[0]`
+   - Đạt đỉnh 42 cột nhưng bias quá âm (-7.2), chim không đập cánh cho đến khi sắp chạm đất.
+   - Đã quay lại continuous flap vì độ tin cậy.
 
 ### Fitness Function
 
@@ -171,6 +180,16 @@ Output:
 - `logs/winner.pkl` — genome tốt nhất mọi thời đại
 - `logs/winner_net.json` — topology dạng JSON (cho web viz)
 - Terminal: best_fitness, mean_fitness, best_score, species count mỗi gen
+
+### Train song song với ParallelEvaluator
+
+Trình huấn luyện dùng **ParallelEvaluator** từ neat-python để phân phối đánh giá genome lên tất cả CPU cores:
+
+```bash
+python train.py 500    # tự động dùng toàn bộ CPU cores
+```
+
+Trên máy 12 nhân, 500 generation hoàn thành trong ~6 phút (so với ~30 phút nếu chạy đơn luồng).
 
 ### Xem kết quả
 
@@ -336,27 +355,40 @@ Có thể thiết lập GitHub Action train tự động hàng ngày:
 
 ## Kết quả thực nghiệm
 
-| Metric | Random seeds | Fixed seeds (v1) | **Rising-edge + tuning** | Mô tả |
-|---|---|---|---|---|
-| Best score (avg 6 runs) | 22.33 | 29.00 | **42.00** | Số cột trung bình |
-| Best generation | gen 168 | gen 158 | **gen 329** | Gen đạt best |
-| Winner hidden nodes | 1 | 8 | **5** | Độ phức tạp mạng |
-| Winner fitness | ~1100 | ~1821 | **~2974** | Fitness cao nhất |
-| Validation (10 seeds) | 3.7 avg | 7.0 avg | **26.1 avg** | Trung bình 10 seed lạ |
-| Flight quality | Rung lắc liên tục | Ổn định cơ bản | **Mượt, rising-edge** | Đụng cột trên/dưới |
+| Metric | Random seeds | Fixed seeds (v1) | Rising-edge + tuning | **Song song (500 gen)** | Mo ta |
+|---|---|---|---|---|---|---|
+| Best score (avg 6 runs) | 22.33 | 29.00 | 42.00 | **29.50** | So cot trung binh |
+| Best generation | gen 168 | gen 158 | gen 329 | **gen 41** | Gen dat best |
+| Winner hidden nodes | 1 | 8 | 5 | **2** | Do phuc tap mang |
+| Winner fitness | ~1100 | ~1821 | ~2974 | **~2052** | Fitness cao nhat |
+| Validation (10 seeds) | 3.7 avg | 7.0 avg | 26.1 avg | **22.2 avg** | Trung binh 10 seed la |
+| Thoi gian train (500 gen) | ~30 phut | ~30 phut | ~30 phut | **~6 phut** | Thoi gian thuc te |
+| So seed bi diem 0 | 6/10 | 3/10 | 1/10 | **0/10** | Seed chet ngay cot dau |
 
-### Kết luận
+### Ket luan
 
-- **Fixed seeds per generation** là cải tiến quan trọng nhất — giúp so sánh genome
-  công bằng, tăng tốc hội tụ đáng kể.
-- **Center bonus** khuyến khích chim căn giữa khe hở, giảm đụng cột.
-- **Rising-edge flap** tự nhiên ngăn đập cánh liên tục, cho điểm cao hơn.
-  Kết hợp với center bonus, mạng học cách căn thời gian đập cánh chính xác.
-- `pop_size=400` và `num_runs=6` là cân bằng tốt giữa tốc độ và chất lượng.
-- **pop_size=400** + species đa dạng (lên đến **23 species** cuối gen)
-  giúp khám phá không gian giải pháp rộng hơn, tránh local optimum.
+- **Fixed seeds per generation** la cai tien quan trong nhat -- giup so sanh genome cong bang, tang toc hoi tu dang ke.
+- **Center bonus** khuyen khich chim can giua khe ho, giam dung cot.
+- **Continuous flap + cooldown** hoat dong tot voi `pop_size=400` va `num_runs=6`.
+- **Parallel evaluator** (12 nhan) giam thoi gian training tu ~30 phut xuong ~6 phut (5x nhanh hon).
+- **Han che hien tai**: Mang winner thuong thieu ket noi `pipe_dx`, chim khong "thay" cot dang den gan -- chi phan ung dua tren do cao va van toc.
+- Best score dat duoc kha som (gen 41), cac gen sau khong cai thien them -- quan the bi ket o local optimum.
 
----
+### De xuat nang cap
+
+1. **Ep ket noi `pipe_dx`**: Tang `conn_add_prob` len 0.8-0.9 de mang hoc cach phan ung dua tren khoang cach cot, khong chi do cao/van toc.
+
+2. **Tang kich thuoc quan the**: `pop_size` len 600-800 va chay 1000+ generation.
+
+3. **Reset khi stagnation**: Bat `reset_on_extinction = True` de restart species khi chung ngung tien hoa, giup thoat khoi local optimum.
+
+4. **Input thu 6 -- khoang cach toi tam gap**: Them `(bird.y - gap_center) / PLAY_H` lam input thu 6 de mang biet chinh xac chim cach tam khe ho bao xa.
+
+5. **Dynamic difficulty**: Bat dau voi `PIPE_GAP` rong (160) va thu hep dan trong qua trinh train, giup mang hoc cac layout kho dan.
+
+6. **Rising-edge flap lai**: Dung continuous flap trong training, rising-edge khi inference -- ket hop uu diem cua ca hai.
+
+7. **Reward shaping**: Tang he so `center_bonus` tu 10 len 20, them phat khi dung gan mep cot de khuyen khich can giua chinh xac hon.
 
 ## Cấu trúc thư mục
 

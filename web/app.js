@@ -39,7 +39,7 @@ function activate(net, inputs) {
   const inputIds = net.input_ids || net.nodes
     .filter(n => n.type === "input")
     .map(n => n.id)
-    .sort((a, b) => a - b);
+    .sort((a, b) => b - a);  // descending: -1, -2, -3, -4, -5 (matching neat-python input_keys order)
   const inputMap = {};
   inputIds.forEach((id, index) => {
     inputMap[id] = inputs[index] ?? 0;
@@ -61,7 +61,7 @@ function activate(net, inputs) {
       }
       const bias = n.bias ?? 0;
       const response = n.response ?? 1;
-      values[n.id] = Math.tanh(bias + response * s);   // matches neat-python tanh
+      values[n.id] = Math.tanh(2.5 * (bias + response * s));   // matches neat-python's tanh_activation: math.tanh(2.5 * x)
     }
   }
   const outputIds = net.output_ids || net.nodes
@@ -119,6 +119,10 @@ function drawBird(t, prevY) {
   const v = game.bird.vy;
   const tilt = Math.max(-0.5, Math.min(1.2, v * 0.08));
 
+  // Wing animation: flap up on flap event, then gradually lower
+  const framesSinceFlap = game.frame - (game.bird.lastFlap || -999);
+  const wingUp = framesSinceFlap <= 6;  // wing stays up for ~6 frames after flap
+
   ctx.save();
   ctx.translate(x, renderY);
   ctx.rotate(tilt);
@@ -130,18 +134,29 @@ function drawBird(t, prevY) {
   ctx.lineWidth = 1.5;
   ctx.stroke();
 
-  // Wing flap (subtle two-frame animation)
-  const flapPhase = Math.floor(((t || 0) / 90) % 2);
-  ctx.fillStyle = "#f1c40f";
-  if (flapPhase === 0) {
+  // Wing — visible contrasting color, moves up/down with actual flapping
+  ctx.fillStyle = "#e67e22";   // dark orange, contrasts with yellow body
+  ctx.strokeStyle = "#d35400";
+  ctx.lineWidth = 1;
+  if (wingUp) {
+    // Wing up position (during flap)
     ctx.beginPath();
-    ctx.ellipse(-4, 4, 8, 4, 0, 0, Math.PI * 2);
+    ctx.ellipse(-6, -2, 10, 6, -0.3, 0, Math.PI * 2);
     ctx.fill();
+    ctx.stroke();
   } else {
+    // Wing down position (resting)
     ctx.beginPath();
-    ctx.ellipse(-2, 6, 6, 3, 0, 0, Math.PI * 2);
+    ctx.ellipse(-4, 6, 9, 5, 0.2, 0, Math.PI * 2);
     ctx.fill();
+    ctx.stroke();
   }
+
+  // Also draw the wing shadow/feather detail
+  ctx.fillStyle = "#d35400";
+  ctx.beginPath();
+  ctx.ellipse(wingUp ? -4 : -2, wingUp ? 0 : 7, 5, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
 
   // Eye
   ctx.fillStyle = "#fff";
@@ -176,14 +191,11 @@ function render(t) {
 }
 
 // ----- Main loop -----
-let _prevAIOutput = 0.0;
 function loop(t) {
   if (game.bird.alive) {
     if (mode === "ai" && winnerNet) {
       const out = activate(winnerNet, game.getState());
-      const flap = _prevAIOutput <= 0.5 && out[0] > 0.5;
-      _prevAIOutput = out[0];
-      game.step(flap);
+      game.step(out[0] > 0.5);
     } else if (mode === "manual") {
       game.step(false);   // manual only advances via input; gravity handled in step(false)
     }
@@ -258,47 +270,76 @@ function drawNN(net) {
   const svg = document.getElementById("nn");
   svg.innerHTML = "";
   const W = 700, H = 420;
-  const PAD = 40;
+  const PAD = 50;
 
-  // In neat-python, input nodes have negative IDs, output = 0, hidden = positive.
-  const inputs  = net.nodes.filter(n => n.id < 0).sort((a, b) => a.id - b.id);
+  const inputs  = net.nodes.filter(n => n.id < 0).sort((a, b) => b.id - a.id);
   const outputs = net.nodes.filter(n => n.id === 0);
   const hiddens = net.nodes.filter(n => n.id > 0);
 
-  // Layout columns
-  const colX = [PAD, W/2, W - PAD];
+  const colX = [PAD + 10, W/2, W - PAD - 10];
+  const inputLabels = ["bird y", "velocity", "pipe dx", "top y", "bot y"];
   const posOf = {};
-  const setCol = (arr, col, label) => {
+
+  // Position nodes with even vertical spacing
+  const positionNodes = (arr, col) => {
     arr.forEach((n, i) => {
-      const y = H/2 + (i - (arr.length - 1)/2) * Math.min(70, 300 / Math.max(arr.length, 1));
-      posOf[n.id] = { x: colX[col], y, type: n.type, label };
+      const gap = Math.min(70, Math.max(50, 280 / Math.max(arr.length, 1)));
+      const y = H/2 + (i - (arr.length - 1)/2) * gap;
+      posOf[n.id] = { x: colX[col], y, type: n.type, bias: n.bias };
     });
   };
-  setCol(inputs,  0, "input");
-  setCol(outputs, 2, "output");
-  setCol(hiddens, 1, "hidden");
+  positionNodes(inputs,  0);
+  positionNodes(outputs, 2);
+  positionNodes(hiddens, 1);
 
-  // Connections
+  // ---- Connections ----
+  let maxW = 0;
+  for (const c of net.connections) maxW = Math.max(maxW, Math.abs(c.weight));
+  if (maxW === 0) maxW = 1;
+
   for (const c of net.connections) {
     const a = posOf[c.in], b = posOf[c.out];
     if (!a || !b) continue;
-    const stroke = c.weight > 0 ? "#16a34a" : "#2563eb";
-    const w = Math.max(1, Math.min(5, Math.abs(c.weight)));
+
+    const isPos = c.weight > 0;
+    const thickness = 1 + Math.abs(c.weight) / maxW * 4;
+    const opacity = 0.25 + Math.abs(c.weight) / maxW * 0.5;
+
     svg.innerHTML += `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}"
-                          stroke="${stroke}" stroke-width="${w}" opacity="0.55"/>`;
+          stroke="${isPos ? '#16a34a' : '#dc2626'}" stroke-width="${thickness}" opacity="${opacity}"/>`;
   }
-  // Nodes
+
+  // ---- Nodes ----
   for (const id in posOf) {
     const p = posOf[id];
-    const fill = p.type === "input" ? "#dcfce7" : p.type === "output" ? "#fee2e2" : "#dbeafe";
-    svg.innerHTML += `<circle cx="${p.x}" cy="${p.y}" r="14" fill="${fill}" stroke="#000" stroke-width="2"/>`;
-    if (p.type === "input") {
-      const labels = ["bird y", "velocity", "pipe dx", "top y", "bot y"];
+    const isIn = p.type === "input";
+    const isOut = p.type === "output";
+    const r = isOut ? 18 : 14;
+
+    let fill, stroke;
+    if (isIn)     { fill = "#dcfce7"; stroke = "#15803d"; }
+    else if (isOut) { fill = "#fee2e2"; stroke = "#dc2626"; }
+    else           { fill = "#f3e8ff"; stroke = "#7c3aed"; }
+
+    svg.innerHTML += `<circle cx="${p.x}" cy="${p.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="2"/>`;
+
+    // Input label on the left
+    if (isIn) {
       const idx = inputs.findIndex(n => n.id === parseInt(id));
-      svg.innerHTML += `<text x="${p.x - 24}" y="${p.y + 5}" text-anchor="end" font-size="13">${labels[idx] || "in"}</text>`;
+      svg.innerHTML += `<text x="${p.x - 22}" y="${p.y + 4}" text-anchor="end" font-size="12" fill="#374151"
+                            font-weight="600">${inputLabels[idx] || "?"}</text>`;
     }
-    if (p.type === "output") {
-      svg.innerHTML += `<text x="${p.x + 24}" y="${p.y + 5}" font-size="13">flap</text>`;
+
+    // Output label on the right
+    if (isOut) {
+      svg.innerHTML += `<text x="${p.x + 22}" y="${p.y + 4}" font-size="12" fill="#dc2626"
+                            font-weight="bold">flap</text>`;
+      svg.innerHTML += `<text x="${p.x}" y="${p.y + 36}" text-anchor="middle" font-size="9" fill="#9ca3af">if > 0.5</text>`;
+    }
+
+    // Bias below hidden nodes
+    if (p.type === "hidden" && p.bias != null) {
+      svg.innerHTML += `<text x="${p.x}" y="${p.y + 28}" text-anchor="middle" font-size="9" fill="#6b7280">bias ${p.bias.toFixed(2)}</text>`;
     }
   }
 }

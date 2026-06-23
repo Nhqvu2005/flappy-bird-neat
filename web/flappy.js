@@ -80,7 +80,7 @@
       return this.bird.alive;
     }
     reset() {
-      this.bird = { x: SCREEN_W * 0.3, y: PLAY_H * 0.5, vy: 0, alive: true, score: 0 };
+      this.bird = { x: SCREEN_W * 0.3, y: PLAY_H * 0.5, vy: 0, alive: true, score: 0, lastFlap: -999 };
       this.pipes = [];
       this.spawnPipe(SCREEN_W + 50);
       this.spawnPipe(SCREEN_W + 50 + PIPE_SPACING);

@@ -13,7 +13,7 @@
 <p align="center">
   <img src="docs/demo.gif" alt="Flappy AI Demo" width="300">
   <br>
-  <em>AI playing Flappy Bird — achieved 42 avg pipes (gen 329)</em>
+  <em>AI playing Flappy Bird — avg 22.2 pipes across 10 unseen seeds (best 42)</em>
 </p>
 
 ---
@@ -108,19 +108,27 @@ Each bird is controlled by a feedforward network with:
 
 **1 output**: Value in [-1, 1] — bird flaps when output **exceeds 0.5** (continuous flap).
 
-**Hidden nodes**: None initially — NEAT adds hidden nodes via mutation (`node_add_prob=0.2`). Topology evolves naturally.
+**Hidden nodes**: None initially — NEAT adds hidden nodes via mutation (`node_add_prob=0.3`). Topology evolves naturally.
 
-### Flap Cooldown
+> **Note**: NEAT's pruning often removes the `pipe_dx` connection, so the bird may not "see" approaching pipes. Consider increasing `conn_add_prob` if this limits performance.
 
-A 3-frame cooldown prevents rapid re-flapping:
+### Flap Mechanism
 
-```
-Frame:   1  2  3  4  5  6  7  8  9
-Output:  0.7 0.8 0.6 0.9 0.8 0.7 0.6 0.8 0.4
-Flap:    yes no  no  yes no  no  no  yes no
-```
+Two approaches were tested:
 
-This prevents the bird from shooting up like a rocket while still allowing NEAT to evolve complex hidden-node networks.
+1. **Continuous flap** (current): `flap = out > 0.5`, with **FLAP_COOLDOWN=3** frames in game.py.
+   - A 3-frame cooldown prevents rapid re-flapping:
+   ```
+   Frame:   1  2  3  4  5  6  7  8  9
+   Output:  0.7 0.8 0.6 0.9 0.8 0.7 0.6 0.8 0.4
+   Flap:    yes no  no  yes no  no  no  yes no
+   ```
+   - This prevents the bird from shooting up like a rocket.
+   - Training score: **29.5 avg** (500 gen), validation **22.2 avg**
+
+2. **Rising-edge flap** (experimental): `flap = prev_out <= 0.5 < out[0]`
+   - Produced higher peak scores (42 avg) but winners developed extreme negative bias (-7.2), causing the bird to never flap until nearly hitting the ground.
+   - Reverted to continuous flap for reliability.
 
 ### Fitness Function
 
@@ -171,6 +179,16 @@ Output:
 - `logs/winner.pkl` — all-time best genome (pickle)
 - `logs/winner_net.json` — best network topology (JSON)
 - Terminal: best_fitness, mean_fitness, best_score, species count each gen
+
+### Parallel Training
+
+The trainer uses **ParallelEvaluator** from neat-python to distribute genome evaluation across all CPU cores:
+
+```bash
+python train.py 500    # automatically uses all CPU cores
+```
+
+On a 12-core machine, 500 generations completes in ~6 minutes (vs ~30 min single-threaded).
 
 ### Viewing Results
 
@@ -335,26 +353,42 @@ Set up automated daily training:
 
 ## Experimental Results
 
-| Metric | Random seeds | Fixed seeds (v1) | **Rising-edge + tuning** | Description |
-|---|---|---|---|---|
-| Best score (avg 6 runs) | 22.33 | 29.00 | **42.00** | Average pipes passed |
-| Best generation | gen 168 | gen 158 | **gen 329** | Generation with best score |
-| Winner hidden nodes | 1 | 8 | **5** | Network complexity |
-| Winner fitness | ~1100 | ~1821 | **~2974** | Peak fitness |
-| Validation (10 seeds) | 3.7 avg | 7.0 avg | **26.1 avg** | Unseen layout average pipe |
-| Gens to stabilize >20 pipes | ~120 | ~80 | **~37** | Convergence speed |
-| Flight quality | Constant jitter | Basic stability | **Smooth, rising-edge** | Top/bottom pipe hits |
+| Metric | Random seeds | Fixed seeds (v1) | Rising-edge + tuning | **Parallel (500 gen)** | Description |
+|---|---|---|---|---|---|
+| Best score (avg 6 runs) | 22.33 | 29.00 | 42.00 | **29.50** | Average pipes passed |
+| Best generation | gen 168 | gen 158 | gen 329 | **gen 41** | Generation with best score |
+| Winner hidden nodes | 1 | 8 | 5 | **2** | Network complexity |
+| Winner fitness | ~1100 | ~1821 | ~2974 | **~2052** | Peak fitness |
+| Validation (10 seeds) | 3.7 avg | 7.0 avg | 26.1 avg | **22.2 avg** | Unseen layout avg pipes |
+| Gens to stabilize >20 pipes | ~120 | ~80 | ~37 | **~33** | Convergence speed |
+| Training time (500 gen) | ~30 min | ~30 min | ~30 min | **~6 min** | CPU wall clock |
+| Zero-score seeds | 6/10 | 3/10 | 1/10 | **0/10** | Seeds where bird dies at pipe 1 |
 
 ### Key Insights
 
 - **Fixed seeds per generation** was the most important improvement — enabling fair
   genome comparison and significantly boosting convergence speed.
 - **Center bonus** encourages passing through the gap center, reducing top/bottom collisions.
-- **Rising-edge flap** naturally prevents rapid re-flapping and produces higher scores.
-  Combined with the center bonus, the network learns to time flaps precisely.
-- `pop_size=400` and `num_runs=6` strike a good balance between speed and quality.
-- **pop_size of 400** + species diversity (up to **23 species** by late generations)
-  helps explore the solution space more broadly, avoiding local optima.
+- **Continuous flap + cooldown** works well when coupled with `pop_size=400` and `num_runs=6`.
+- **Parallel evaluator** (12 cores) reduced training time from ~30 min to ~6 min (5× faster).
+- **Current limitations**: The winner network often lacks `pipe_dx` connections, meaning the bird doesn't "see" approaching pipes — it reacts based on height and velocity only, not pipe proximity.
+- The best score was achieved relatively early (gen 41), with later generations failing to improve further — suggesting the population got stuck in a local optimum.
+
+### Future Improvements
+
+1. **Force `pipe_dx` connections**: Increase `conn_add_prob` to 0.8–0.9 so the network learns to react based on pipe distance, not just height/velocity.
+
+2. **Larger population**: Increase `pop_size` to 600–800 and run for 1000+ generations.
+
+3. **Cycle detection/reset**: Enable `reset_on_extinction = True` to restart species when they stagnate, giving the population a chance to break out of local optima.
+
+4. **6th input — gap distance**: Add `(bird.y - gap_center) / PLAY_H` as a 6th input so the network knows exactly how far from the gap center the bird is.
+
+5. **Dynamic difficulty**: Start with wider `PIPE_GAP` (e.g., 160) and gradually narrow it during training, so the network learns progressively harder layouts.
+
+6. **Rising-edge flap re-evaluation**: The rising-edge approach showed higher peak scores (42 avg) but produced winners with extreme negative bias. A hybrid approach (continuous flap during training, rising-edge during inference) could combine the best of both.
+
+7. **Reward shaping**: Increase `center_bonus` multiplier from 10 to 20, and add a penalty for hitting near pipe edges to encourage tighter centering.
 
 ---
 

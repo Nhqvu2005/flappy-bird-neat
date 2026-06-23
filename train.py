@@ -16,6 +16,7 @@ import copy
 from pathlib import Path
 
 import neat
+from neat.parallel import ParallelEvaluator
 
 # optional progress bar
 try:
@@ -77,41 +78,28 @@ def export_winner_net(genome, out_path, input_ids=None, output_ids=None):
     out_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
 
 
-# Fixed seeds per generation — all genomes face the SAME layouts for fair comparison.
-# Different generations get different seeds to prevent memorization.
-# Seed = gen * 100 + run_index (run_index = 0..num_runs-1)
-_GEN_SEED_OFFSET = 0
-
-def set_gen_seeds(gen):
-    global _GEN_SEED_OFFSET
-    _GEN_SEED_OFFSET = gen * 100 + 1
-
-def eval_genome(genome, config, num_runs=6):
-    """Play a bird; return (avg_fitness, avg_score).
-    Rising-edge flap — bird flaps only when output crosses 0.5 (prev <= 0.5 < out).
-    This naturally prevents rapid re-flapping and produces higher scores.
-    Fitness = score * 50 + center_bonus + frames_alive * 0.1
-    Each genome is tested against num_runs DIFFERENT pipe layouts.
-    Uses FIXED seeds per generation (all genomes face the same layouts)
-    so the resulting network GENERALIZES instead of memorizing one layout."""
+def _eval_genome(genome, config, track_score=False):
+    """Core evaluation. Returns fitness, or (fitness, score) if track_score=True.
+    Seed offset is set on config per-generation by LogReporter.start_generation.
+    This allows ParallelEvaluator (Windows spawn) to pass seeds to workers via pickled config."""
     net = neat.nn.FeedForwardNetwork.create(genome, config)
+    num_runs = getattr(config, '_eval_num_runs', 6)
+    seed_offset = getattr(config, '_eval_seed_offset', 0)
+    max_frames = 60 * 90
     total_fitness = 0.0
     total_score = 0
-    max_frames = 60 * 90
 
     for run_i in range(num_runs):
-        game = Game(seed=_GEN_SEED_OFFSET + run_i)
+        game = Game(seed=seed_offset + run_i)
         fitness = 0.0
         prev_score = 0
-        prev_out = 0.0
         for _ in range(max_frames):
             if not game.bird.alive:
                 break
             np = game.next_pipe()
             state = game.bird.get_state(np)
             out = net.activate(state)
-            flap = prev_out <= 0.5 < out[0]  # rising-edge
-            prev_out = out[0]
+            flap = out[0] > 0.5  # continuous flap (cooldown handled by game.step)
             game.step(flap)
             fitness += 0.1
             if game.bird.score > prev_score:
@@ -125,18 +113,22 @@ def eval_genome(genome, config, num_runs=6):
         total_fitness += fitness
         total_score += game.bird.score
 
-    return total_fitness / num_runs, total_score / num_runs
+    avg_f = total_fitness / num_runs
+    if track_score:
+        return avg_f, total_score / num_runs
+    return avg_f
 
 
-def eval_genomes(genomes, config):
-    for _, genome in genomes:
-        genome.fitness, _ = eval_genome(genome, config)
+def eval_genome(genome, config):
+    """For neat ParallelEvaluator — returns fitness only."""
+    return _eval_genome(genome, config, track_score=False)
 
 
 class LogReporter(neat.reporting.BaseReporter):
     """Per-generation JSONL log + optional tqdm progress bar."""
 
-    def __init__(self, use_tqdm=False):
+    def __init__(self, config, use_tqdm=False):
+        self.config = config
         self.best_per_gen = []
         self.alltime_best_genome = None
         self.alltime_best_score = -1
@@ -147,7 +139,8 @@ class LogReporter(neat.reporting.BaseReporter):
 
     def start_generation(self, generation):
         self.gen = generation
-        set_gen_seeds(generation)  # fixed seeds for fair comparison
+        # Set fixed seeds on config so ParallelEvaluator workers can read them
+        self.config._eval_seed_offset = generation * 100 + 1
         if self._progress:
             self._progress.update(1)
 
@@ -156,8 +149,8 @@ class LogReporter(neat.reporting.BaseReporter):
         best_fit = max(fits)
         mean_fit = sum(fits) / len(fits)
         species_count = len(species.species)
-        # Replay the best genome to get its actual score
-        _, best_score = eval_genome(best_genome, config)
+        # Replay the best genome to get its actual score (uses detailed eval)
+        _, best_score = _eval_genome(best_genome, config, track_score=True)
 
         # Track all-time best genome across ALL generations
         if self.alltime_best_genome is None or best_score > self.alltime_best_score:
@@ -215,13 +208,16 @@ def main():
         p.add_reporter(neat.StdOutReporter(True))
     stats = neat.StatisticsReporter()
     p.add_reporter(stats)
-    log_reporter = LogReporter(use_tqdm=bool(tqdm))
+    log_reporter = LogReporter(config, use_tqdm=bool(tqdm))
     p.add_reporter(log_reporter)
 
     # Store progress bar in the reporter so it can be updated each generation
     log_reporter._progress = progress
 
-    _ = p.run(eval_genomes, gens)  # discard last-gen winner
+    # Parallel evaluator uses all CPU cores
+    num_workers = os.cpu_count() or 1
+    pe = ParallelEvaluator(num_workers, eval_function=eval_genome)
+    _ = p.run(pe.evaluate, gens)  # discard last-gen winner
 
     # Close progress bar
     if progress:
@@ -240,18 +236,15 @@ def main():
     for seed in val_seeds:
         game = Game(seed=seed)
         net = neat.nn.FeedForwardNetwork.create(winner, config)
-        prev_out = 0.0
         for _ in range(5400):
             if not game.bird.alive:
                 break
             state = game.bird.get_state(game.next_pipe())
             out = net.activate(state)
-            flap = prev_out <= 0.5 < out[0]
-            prev_out = out[0]
-            game.step(flap)
+            game.step(out[0] > 0.5)
         total_score += game.bird.score
     avg_final_score = total_score / 10
-    print(f"  Validation avg score: {avg_final_score:.1f}  (range: call python train.py for details)")
+    print(f"  Validation avg score: {avg_final_score:.1f}")
 
     # Save winner
     with (WINNER_DIR / "winner.pkl").open("wb") as f:

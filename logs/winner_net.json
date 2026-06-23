@@ -23,47 +23,15 @@
     {
       "id": 0,
       "type": "output",
-      "bias": -7.217443,
+      "bias": -1.824072,
       "response": 1.0,
       "activation": "tanh",
       "aggregation": "sum"
     },
     {
-      "id": 25429,
+      "id": 19244,
       "type": "hidden",
-      "bias": -0.162106,
-      "response": 1.0,
-      "activation": "tanh",
-      "aggregation": "sum"
-    },
-    {
-      "id": 25816,
-      "type": "hidden",
-      "bias": 0.488285,
-      "response": 1.0,
-      "activation": "tanh",
-      "aggregation": "sum"
-    },
-    {
-      "id": 27525,
-      "type": "hidden",
-      "bias": 0.367994,
-      "response": 1.0,
-      "activation": "tanh",
-      "aggregation": "sum"
-    },
-    {
-      "id": 27659,
-      "type": "hidden",
-      "bias": -0.091423,
-      "response": 1.0,
-      "activation": "tanh",
-      "aggregation": "sum"
-    },
-    {
-      "id": 28691,
-      "type": "hidden",
-      "bias": 0.286361,
+      "bias": -0.924286,
       "response": 1.0,
       "activation": "tanh",
       "aggregation": "sum"
@@ -73,50 +41,35 @@
     {
       "in": -1,
       "out": 0,
-      "weight": 15.909105
+      "weight": 4.199967
     },
     {
       "in": -5,
-      "out": 27525,
-      "weight": 2.42821
-    },
-    {
-      "in": -3,
       "out": 0,
-      "weight": -7.97914
-    },
-    {
-      "in": 25429,
-      "out": 25816,
-      "weight": -1.039847
+      "weight": 0.632519
     },
     {
       "in": -4,
       "out": 0,
-      "weight": -16.587549
-    },
-    {
-      "in": -5,
-      "out": 28691,
-      "weight": 0.752201
-    },
-    {
-      "in": 28691,
-      "out": 25429,
-      "weight": -1.7148
-    },
-    {
-      "in": -3,
-      "out": 27659,
-      "weight": -0.319397
+      "weight": -5.432837
     },
     {
       "in": -2,
+      "out": 19244,
+      "weight": 1.855325
+    },
+    {
+      "in": 19244,
       "out": 0,
-      "weight": 6.04803
+      "weight": 1.514429
+    },
+    {
+      "in": -5,
+      "out": 19244,
+      "weight": -0.053648
     }
   ],
-  "fitness": 2974.2027178348985,
+  "fitness": 2052.288128792876,
   "input_ids": [
     -1,
     -2,
