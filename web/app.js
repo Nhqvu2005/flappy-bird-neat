@@ -6,6 +6,7 @@ let game = new Flappy.Game();
 let mode = "manual";                 // "manual" | "ai"
 let bestScore = parseInt(localStorage.getItem("flappyai_best") || "0");
 let winnerNet = null;                // loaded from /api/winner
+let resetTimer = null;
 
 const canvas = document.getElementById("game");
 const ctx    = canvas.getContext("2d");
@@ -29,12 +30,21 @@ canvas.addEventListener("touchstart", (e) => {
   if (mode === "manual") userFlap();
 }, { passive: false });
 
-function userFlap() { game.step(true); render(); }
+function userFlap() { game.step(true); render(performance.now()); }
 
 // ----- Feed-forward inference (same as neat-python tanh) -----
 function activate(net, inputs) {
   // Returns output array. net: {nodes:[{id,type,act}], connections:[{in,out,weight}]}
   const values = {};
+  const inputIds = net.input_ids || net.nodes
+    .filter(n => n.type === "input")
+    .map(n => n.id)
+    .sort((a, b) => a - b);
+  const inputMap = {};
+  inputIds.forEach((id, index) => {
+    inputMap[id] = inputs[index] ?? 0;
+  });
+
   // Order: inputs first, then by id (topological-ish)
   const sorted = [...net.nodes].sort((a, b) => {
     const oa = a.type === "input" ? 0 : a.type === "hidden" ? 1 : 2;
@@ -42,18 +52,23 @@ function activate(net, inputs) {
     return oa - ob || a.id - b.id;
   });
   for (const n of sorted) {
-    if (n.type === "input") values[n.id] = inputs[n.id];
-    else {
+    if (n.type === "input") {
+      values[n.id] = inputMap[n.id] ?? 0;
+    } else {
       let s = 0;
       for (const c of net.connections) {
-        if (c.out === n.id) s += (values[c.in] || 0) * c.weight;
+        if (c.out === n.id) s += (values[c.in] ?? 0) * c.weight;
       }
-      values[n.id] = Math.tanh(s);   // matches neat-python tanh
+      const bias = n.bias ?? 0;
+      const response = n.response ?? 1;
+      values[n.id] = Math.tanh(bias + response * s);   // matches neat-python tanh
     }
   }
-  // Output node is the lowest output id (single output)
-  const outputs = net.nodes.filter(n => n.type === "output").sort((a, b) => a.id - b.id);
-  return outputs.map(n => values[n.id]);
+  const outputIds = net.output_ids || net.nodes
+    .filter(n => n.type === "output")
+    .map(n => n.id)
+    .sort((a, b) => a - b);
+  return outputIds.map(id => values[id] ?? 0);
 }
 
 // ----- Render -----
@@ -62,35 +77,96 @@ function drawPipes() {
   ctx.strokeStyle = "#288228";
   ctx.lineWidth = 2;
   for (const p of game.pipes) {
-    const top = p.gapY - 140/2;
-    ctx.fillRect(p.x, 0, 60, top);
-    ctx.strokeRect(p.x, 0, 60, top);
-    ctx.fillRect(p.x, p.gapY + 140/2, 60, Flappy.PLAY_H - (p.gapY + 140/2));
-    ctx.strokeRect(p.x, p.gapY + 140/2, 60, Flappy.PLAY_H - (p.gapY + 140/2));
+    const top = p.gapY - Flappy.PIPE_GAP / 2;
+    const bot = p.gapY + Flappy.PIPE_GAP / 2;
+    // Top pipe
+    ctx.fillRect(p.x, 0, Flappy.PIPE_W, top);
+    ctx.strokeRect(p.x, 0, Flappy.PIPE_W, top);
+    // Cap on top pipe
+    ctx.fillStyle = "#5ed15e";
+    ctx.fillRect(p.x - 3, top - 8, Flappy.PIPE_W + 6, 8);
+    ctx.strokeRect(p.x - 3, top - 8, Flappy.PIPE_W + 6, 8);
+    ctx.fillStyle = "#3cb43c";
+    // Bottom pipe
+    ctx.fillRect(p.x, bot, Flappy.PIPE_W, Flappy.PLAY_H - bot);
+    ctx.strokeRect(p.x, bot, Flappy.PIPE_W, Flappy.PLAY_H - bot);
+    // Cap on bottom pipe
+    ctx.fillStyle = "#5ed15e";
+    ctx.fillRect(p.x - 3, bot, Flappy.PIPE_W + 6, 8);
+    ctx.strokeRect(p.x - 3, bot, Flappy.PIPE_W + 6, 8);
+    ctx.fillStyle = "#3cb43c";
   }
 }
-function drawGround() {
+function drawGround(t) {
+  // t: time in ms for animated stripes
   ctx.fillStyle = "#deb887";
   ctx.fillRect(0, Flappy.PLAY_H, Flappy.SCREEN_W, Flappy.GROUND_H);
+  ctx.fillStyle = "#c19a6b";
+  const stripeY = Flappy.PLAY_H + 18;
+  const offset = ((t || 0) * 0.05) % 24;
+  for (let x = -24; x < Flappy.SCREEN_W; x += 24) {
+    ctx.fillRect(x - offset, stripeY, 12, 4);
+  }
   ctx.fillStyle = "#000";
   ctx.fillRect(0, Flappy.PLAY_H, Flappy.SCREEN_W, 2);
 }
-function drawBird() {
+function drawBird(t, prevY) {
   const x = game.bird.x, y = game.bird.y;
+  // Smooth rendered y toward physics y for a less jittery look
+  const renderY = prevY == null ? y : prevY + (y - prevY) * 0.6;
+
+  // Tilt based on velocity (clamped), nose-up when climbing, nose-down when falling
+  const v = game.bird.vy;
+  const tilt = Math.max(-0.5, Math.min(1.2, v * 0.08));
+
+  ctx.save();
+  ctx.translate(x, renderY);
+  ctx.rotate(tilt);
+
+  // Body
   ctx.fillStyle = "#ffdc00";
-  ctx.beginPath(); ctx.ellipse(x, y, 17, 12, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(0, 0, 17, 12, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = "#b48f00";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // Wing flap (subtle two-frame animation)
+  const flapPhase = Math.floor(((t || 0) / 90) % 2);
+  ctx.fillStyle = "#f1c40f";
+  if (flapPhase === 0) {
+    ctx.beginPath();
+    ctx.ellipse(-4, 4, 8, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+  } else {
+    ctx.beginPath();
+    ctx.ellipse(-2, 6, 6, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Eye
+  ctx.fillStyle = "#fff";
+  ctx.beginPath(); ctx.arc(6, -3, 4, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = "#000";
-  ctx.beginPath(); ctx.arc(x+8, y-4, 3, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.arc(7.5, -3, 2, 0, Math.PI * 2); ctx.fill();
+
+  // Beak
   ctx.fillStyle = "#ff8c00";
   ctx.beginPath();
-  ctx.moveTo(x+14, y-2); ctx.lineTo(x+22, y); ctx.lineTo(x+14, y+4); ctx.closePath(); ctx.fill();
+  ctx.moveTo(12, -1); ctx.lineTo(22, 1); ctx.lineTo(12, 5); ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = "#a85f00";
+  ctx.stroke();
+
+  ctx.restore();
 }
-function render() {
+let _prevBirdY = null;
+function render(t) {
   ctx.fillStyle = "#87ceeb";
   ctx.fillRect(0, 0, Flappy.SCREEN_W, Flappy.SCREEN_H);
   drawPipes();
-  drawGround();
-  drawBird();
+  drawGround(t);
+  drawBird(t, _prevBirdY);
+  _prevBirdY = _prevBirdY == null ? game.bird.y : _prevBirdY + (game.bird.y - _prevBirdY) * 0.6;
   scoreEl.textContent = game.bird.score;
   if (game.bird.score > bestScore) {
     bestScore = game.bird.score;
@@ -100,7 +176,7 @@ function render() {
 }
 
 // ----- Main loop -----
-function loop() {
+function loop(t) {
   if (game.bird.alive) {
     if (mode === "ai" && winnerNet) {
       const out = activate(winnerNet, game.getState());
@@ -109,9 +185,13 @@ function loop() {
       game.step(false);   // manual only advances via input; gravity handled in step(false)
     }
   } else {
-    setTimeout(() => { game.reset(); }, 700);
+    // freeze smoothed y on death so the bird stays where it died
+    if (_prevBirdY == null) _prevBirdY = game.bird.y;
+    if (!resetTimer) {
+      resetTimer = setTimeout(() => { game.reset(); _prevBirdY = null; resetTimer = null; }, 700);
+    }
   }
-  render();
+  render(t);
   requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);

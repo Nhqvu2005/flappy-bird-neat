@@ -21,7 +21,7 @@ MAX_VY = 10.0
 PIPE_W = 60
 PIPE_GAP = 140          # vertical gap between top/bottom pipe
 PIPE_SPACING = 200      # horizontal distance between consecutive pipes
-PIPE_SPEED = 3.0
+PIPE_SPEED = 2.0  # slower pipe movement for smoother gameplay
 
 BIRD_W = 34
 BIRD_H = 24
@@ -124,7 +124,8 @@ class Game:
         elif self.bird.y - BIRD_H / 2 <= 0:           # hit ceiling
             self.bird.y = BIRD_H / 2
             self.bird.vy = 0
-        else:
+
+        if self.bird.alive:
             bx, by, bw, bh = self.bird.rect()
             for p in self.pipes:
                 if (bx + bw > p.x and bx < p.x + PIPE_W):

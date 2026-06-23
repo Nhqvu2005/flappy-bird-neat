@@ -13,7 +13,14 @@ import pickle
 from collections import deque
 from pathlib import Path
 
-import pygame
+try:
+    import pygame
+except ImportError:
+    print("Pygame chua duoc cai dat.")
+    print("Web dashboard (option 4) hoat dong khong can pygame.")
+    print("De xem AI choi bang pygame, chay: pip install pygame")
+    input("Nhan Enter de quay lai menu...")
+    sys.exit(1)
 import neat
 
 from game import Game, Bird, SCREEN_W, SCREEN_H, GROUND_H, PLAY_H, PIPE_W

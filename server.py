@@ -16,6 +16,7 @@ from pathlib import Path
 
 from game import Game
 import neat
+from train import export_winner_net
 
 
 BASE_DIR   = Path(__file__).parent.resolve()
@@ -55,22 +56,17 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         import pickle
         with WINNER_PKL.open("rb") as f:
             winner = pickle.load(f)
-        nodes = []
-        for nid in winner.nodes:
-            if nid < 0:
-                t = "input"
-            elif nid == 0:
-                t = "output"
-            else:
-                t = "hidden"
-            nodes.append({"id": nid, "type": t})
-        conns = []
-        for cg in winner.connections.values():
-            if cg.enabled:
-                conns.append({"in": cg.key[0], "out": cg.key[1], "weight": round(cg.weight, 3)})
-        WINNER_JSON.write_text(json.dumps(
-            {"nodes": nodes, "connections": conns, "fitness": winner.fitness},
-            indent=2), encoding="utf-8")
+        config = neat.Config(
+            neat.DefaultGenome, neat.DefaultReproduction,
+            neat.DefaultSpeciesSet, neat.DefaultStagnation,
+            str(CONFIG_PATH),
+        )
+        export_winner_net(
+            winner,
+            WINNER_JSON,
+            config.genome_config.input_keys,
+            config.genome_config.output_keys,
+        )
 
     def _json(self, obj, status=200):
         body = json.dumps(obj).encode("utf-8")
@@ -88,13 +84,18 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 def main():
     port = int(sys.argv[1]) if len(sys.argv) > 1 else 8765
-    with socketserver.ThreadingTCPServer(("127.0.0.1", port), Handler) as httpd:
-        print(f"FlappyAI dashboard: http://127.0.0.1:{port}/")
+    max_tries = 5
+    for attempt in range(max_tries):
         try:
-            httpd.serve_forever()
-        except KeyboardInterrupt:
-            print("Bye.")
-
-
-if __name__ == "__main__":
-    main()
+            with socketserver.ThreadingTCPServer(("127.0.0.1", port), Handler) as httpd:
+                print(f"FlappyAI dashboard: http://127.0.0.1:{port}/")
+                httpd.serve_forever()
+        except OSError as e:
+            if e.errno == 10048:  # address already in use
+                print(f"Port {port} is already in use, trying next port...")
+                port += 1
+                continue
+            else:
+                raise
+    print("Failed to start server after several attempts. Please free a port and try again.")
+    sys.exit(1)

@@ -3,9 +3,9 @@
 # Hidden nodes are added by NEAT's mutation; the topology evolves.
 [NEAT]
 fitness_criterion     = max
-fitness_threshold     = 1000
-no_fitness_termination = False
-pop_size              = 80
+fitness_threshold     = 99999
+no_fitness_termination = True
+pop_size              = 400
 reset_on_extinction   = False
 
 [DefaultGenome]
@@ -34,7 +34,7 @@ compatibility_weight_coefficient   = 0.5
 
 # connection add/remove rates
 conn_add_prob           = 0.5
-conn_delete_prob        = 0.5
+conn_delete_prob        = 0.3
 
 # connection enable options
 enabled_default         = True
@@ -71,7 +71,7 @@ weight_mutate_rate      = 0.8
 weight_replace_rate     = 0.1
 
 [DefaultSpeciesSet]
-compatibility_threshold = 1.5
+compatibility_threshold = 3.0
 
 [DefaultStagnation]
 species_fitness_func    = max

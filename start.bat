@@ -1,6 +1,5 @@
 @echo off
 chcp 65001 >nul
-setlocal enabledelayedexpansion
 cd /d "%~dp0"
 
 :MENU
@@ -12,7 +11,7 @@ echo.
 echo   1. Install Python dependencies (chay 1 lan)
 echo   2. Train NEAT (100 generations)
 echo   3. Xem AI choi lai (Pygame window)
-echo   4. Mo web dashboard (http://127.0.0.1:8765)
+echo   4. Mo web dashboard
 echo   0. Exit
 echo.
 set /p "choice=Chon so: "
@@ -41,8 +40,7 @@ goto MENU
 :TRAIN
 echo.
 if not exist logs\ mkdir logs
-echo Dang train NEAT trong %1 generations...
-echo Mac dinh: 100 generations, ~5-15 phut.
+echo Dang train NEAT (100 generations, ~5-15 phut)...
 echo.
 python train.py
 echo.
@@ -67,9 +65,15 @@ goto MENU
 
 :WEB
 echo.
-echo Mo trinh duyet: http://127.0.0.1:8765
-echo Nhan Ctrl+C trong cua so nay de tat.
+echo Dang khoi dong web dashboard...
 echo.
-python server.py
+start "FlappyAI-Server" /MIN cmd /c "python server.py"
+echo.
+echo Server dang chay ngam.
+echo Mo trinh duyet vao: http://127.0.0.1:8765
+echo.
 pause
+echo Dang tat server...
+taskkill /f /fi "WINDOWTITLE eq FlappyAI-Server*" 2>nul
+timeout /t 1 /nobreak >nul
 goto MENU
