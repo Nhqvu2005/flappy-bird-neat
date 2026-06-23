@@ -19,7 +19,7 @@
 
   class Game {
     constructor() {
-      this.bird = { x: SCREEN_W * 0.3, y: PLAY_H * 0.5, vy: 0, alive: true, score: 0 };
+      this.bird = { x: SCREEN_W * 0.3, y: PLAY_H * 0.5, vy: 0, alive: true, score: 0, lastFlap: -999 };
       this.pipes = [];
       this.spawnPipe(SCREEN_W + 50);
       this.spawnPipe(SCREEN_W + 50 + PIPE_SPACING);
@@ -41,7 +41,11 @@
     }
     step(doFlap) {
       if (!this.bird.alive) return false;
-      if (doFlap) this.bird.vy = FLAP_VY;
+      // Flap cooldown: prevents rapid re-flapping that shoots bird upward
+      if (doFlap && this.frame - this.bird.lastFlap >= 3) {
+        this.bird.vy = FLAP_VY;
+        this.bird.lastFlap = this.frame;
+      }
       this.bird.vy = Math.min(this.bird.vy + GRAVITY, MAX_VY);
       this.bird.y += this.bird.vy;
 

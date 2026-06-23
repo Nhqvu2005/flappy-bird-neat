@@ -17,6 +17,7 @@ PLAY_H = SCREEN_H - GROUND_H
 GRAVITY = 0.5
 FLAP_VY = -8.0
 MAX_VY = 10.0
+FLAP_COOLDOWN = 3     # frames between consecutive flaps (prevents rocket-bird)
 
 PIPE_W = 60
 PIPE_GAP = 140          # vertical gap between top/bottom pipe
@@ -49,9 +50,20 @@ class Bird:
     alive: bool = True
     score: int = 0
     fitness: float = 0.0
+    _last_flap_frame: int = -999
 
     def flap(self) -> None:
         self.vy = FLAP_VY
+
+    def can_flap(self, frame: int = 0) -> bool:
+        """Check if enough frames have passed since last flap."""
+        return frame - self._last_flap_frame >= FLAP_COOLDOWN
+
+    def do_flap(self, frame: int = 0) -> None:
+        """Execute flap if cooldown allows."""
+        if self.can_flap(frame):
+            self.flap()
+            self._last_flap_frame = frame
 
     def update(self) -> None:
         self.vy = min(self.vy + GRAVITY, MAX_VY)
@@ -96,7 +108,7 @@ class Game:
             return False
 
         if do_flap:
-            self.bird.flap()
+            self.bird.do_flap(self.frame)
 
         self.bird.update()
 
