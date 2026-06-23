@@ -1,10 +1,10 @@
-# 🐤 FlappyAI — NEAT Neuroevolution tự học chơi Flappy Bird
+# 🐤 FlappyAI — Self-learning Flappy Bird Agent
 
 [![Python](https://img.shields.io/badge/Python-3.8%2B-blue)](https://python.org)
 [![NEAT](https://img.shields.io/badge/NEAT-NeuroEvolution-brightgreen)](https://neat-python.readthedocs.io/)
 
-> Một con chim ảo tự học cách chơi Flappy Bird qua tiến hóa — không cần dữ liệu huấn luyện,
-> không cần label, không cần mạng neural được thiết kế sẵn. Chỉ có **chọn lọc tự nhiên** qua từng thế hệ.
+> A virtual bird that learns to play Flappy Bird through evolution — no training data,
+> no labels, no pre-designed neural network. Just **natural selection** over generations.
 
 ---
 
@@ -13,42 +13,42 @@
 <p align="center">
   <img src="docs/demo.gif" alt="Flappy AI Demo" width="300">
   <br>
-  <em>AI tự động chơi Flappy Bird — đạt 42 cột trung bình (gen 171)</em>
+  <em>AI playing Flappy Bird — achieved 42 avg pipes (gen 171)</em>
 </p>
 
 ---
 
-## 🎯 Mục lục
+## 🎯 Table of Contents
 
-- [Tổng quan](#-tổng-quan)
-- [Kiến trúc hệ thống](#-kiến-trúc-hệ-thống)
-- [Cách hoạt động](#-cách-hoạt-động)
-- [Hướng dẫn train](#-hướng-dẫn-train)
-- [Tinh chỉnh thông số](#-tinh-chỉnh-thông-số-cho-độ-chính-xác-tốt-hơn)
-- [Phương án triển khai](#-phương-án-triển-khai)
-- [Kết quả thực nghiệm](#-kết-quả-thực-nghiệm)
-- [Cấu trúc thư mục](#-cấu-trúc-thư-mục)
+- [Overview](#-overview)
+- [System Architecture](#-system-architecture)
+- [How It Works](#-how-it-works)
+- [Training Guide](#-training-guide)
+- [Hyperparameter Tuning](#-hyperparameter-tuning-for-better-accuracy)
+- [Deployment Options](#-deployment-options)
+- [Experimental Results](#-experimental-results)
+- [Project Structure](#-project-structure)
 - [FAQ & Troubleshooting](#-faq--troubleshooting)
 
 ---
 
-## 🔭 Tổng quan
+## 🔭 Overview
 
-Dự án này sử dụng thuật toán **NEAT (NeuroEvolution of Augmenting Topologies)** để huấn luyện
-một mạng neural điều khiển chim Flappy Bird. Điểm đặc biệt:
+This project uses the **NEAT (NeuroEvolution of Augmenting Topologies)** algorithm to evolve
+a neural network that controls a Flappy Bird. Key highlights:
 
-| Tính năng | Mô tả |
+| Feature | Description |
 |---|---|
-| **🧬 Không cần mạng thiết kế sẵn** | NEAT tự động thêm/xóa node hidden khi cần |
-| **🎮 Game engine thuần Python** | Headless, chạy được không cần GPU |
-| **📊 Dashboard web real-time** | Biểu đồ fitness, mạng neural, chơi thử AI/manual |
-| **🎥 Replay với Pygame** | Xem AI chơi + topology mạng + biểu đồ fitness lịch sử |
-| **🧪 So sánh công bằng giữa các genome** | Fixed seeds mỗi generation — tất cả genome đối mặt cùng layout |
-| **🏆 Lưu genome tốt nhất mọi thời đại** | Không chỉ winner cuối cùng — giữ lại best-ever qua generations |
+| **🧬 No hand-engineered network** | NEAT automatically adds/removes hidden nodes as needed |
+| **🎮 Pure-Python game engine** | Headless, runs without GPU |
+| **📊 Real-time web dashboard** | Fitness chart, neural network viz, playable AI/manual demo |
+| **🎥 Pygame replay** | Watch the AI with live topology + historical fitness chart |
+| **🧪 Fair genome comparison** | Fixed seeds per generation — all genomes face the same layouts |
+| **🏆 All-time best genome tracking** | Saves the best-ever genome, not just the final generation |
 
 ---
 
-## 🏗 Kiến trúc hệ thống
+## 🏗 System Architecture
 
 ```
                     ┌──────────────────────┐
@@ -90,160 +90,159 @@ một mạng neural điều khiển chim Flappy Bird. Điểm đặc biệt:
 
 ---
 
-## 🧠 Cách hoạt động
+## 🧠 How It Works
 
-### Mạng neural
+### Neural Network
 
-Mỗi con chim được điều khiển bởi một mạng feedforward với:
+Each bird is controlled by a feedforward network with:
 
-**5 inputs** (chuẩn hóa về [0, 1]):
+**5 inputs** (normalized to [0, 1]):
 
-| # | Tín hiệu | Mô tả | Công thức |
+| # | Signal | Description | Formula |
 |---|---|---|---|
-| 1 | `bird_y` | Vị trí dọc của chim | `y / PLAY_H` |
-| 2 | `velocity` | Vận tốc (0=vừa đập cánh, 1=rơi nhanh) | `(vy - FLAP_VY) / (MAX_VY - FLAP_VY)` |
-| 3 | `pipe_dx` | Khoảng cách ngang đến cột tiếp theo | `(pipe.x - bird.x) / SCREEN_W` |
-| 4 | `top_y` | Vị trí mép dưới cột trên | `pipe.top / PLAY_H` |
-| 5 | `bot_y` | Vị trí mép trên cột dưới | `pipe.bot / PLAY_H` |
+| 1 | `bird_y` | Bird's vertical position | `y / PLAY_H` |
+| 2 | `velocity` | Velocity (0=just flapped, 1=falling fast) | `(vy - FLAP_VY) / (MAX_VY - FLAP_VY)` |
+| 3 | `pipe_dx` | Horizontal distance to next pipe | `(pipe.x - bird.x) / SCREEN_W` |
+| 4 | `top_y` | Top pipe's bottom edge | `pipe.top / PLAY_H` |
+| 5 | `bot_y` | Bottom pipe's top edge | `pipe.bot / PLAY_H` |
 
-**1 output**: Giá trị trong [-1, 1] — chim đập cánh khi output **vượt ngưỡng 0.5** (rising-edge).
+**1 output**: Value in [-1, 1] — bird flaps when output **exceeds 0.5** (continuous flap).
 
-**Hidden nodes**: Không có sẵn ban đầu — NEAT tự động thêm node hidden qua đột biến
-`node_add_prob=0.2`. Topology tiến hóa tự nhiên.
+**Hidden nodes**: None initially — NEAT adds hidden nodes via mutation (`node_add_prob=0.2`). Topology evolves naturally.
 
-### Cơ chế flap (rising-edge)
+### Flap Cooldown
 
-Chim **chỉ đập cánh khi output vượt từ ≤ 0.5 lên > 0.5**, không đập liên tục khi output > 0.5:
+A 3-frame cooldown prevents rapid re-flapping:
 
 ```
-Output: 0.1 → 0.3 → 0.6 → 0.8 → 0.9 → 0.7 → 0.4 → 0.6 → 0.8
-Flap:         no    yes   no    no    no    no   yes    no
+Frame:   1  2  3  4  5  6  7  8  9
+Output:  0.7 0.8 0.6 0.9 0.8 0.7 0.6 0.8 0.4
+Flap:    yes no  no  yes no  no  no  yes no
 ```
 
-Giống như người chơi thật: **bấm một lần, không giữ**. Giúp chim không bay vọt lên quá nhanh.
+This prevents the bird from shooting up like a rocket while still allowing NEAT to evolve complex hidden-node networks.
 
-### Fitness function
+### Fitness Function
 
 ```
 Fitness = frames_alive × 0.1 + Σ(pipes_passed) × (50 + center_bonus)
 ```
 
-- **0.1 mỗi frame**: Khuyến khích sống sót
-- **+50 mỗi cột vượt qua**: Phần thưởng chính
-- **center_bonus (0–10)**: Thưởng thêm nếu chim đi qua **giữa khe hở**:
+- **0.1 per frame**: Rewards survival
+- **+50 per pipe passed**: Primary reward
+- **center_bonus (0–10)**: Bonus for passing through the **middle of the gap**:
   ```
   dist = |bird.y - gap_center|
   centering = max(0, 1 - dist / (PIPE_GAP/2))
   bonus = centering × 10
   ```
-  Khuyến khích chim căn chỉnh chính xác, tránh đụng cột trên/dưới.
+  Encourages precise alignment, reducing top/bottom pipe collisions.
 
-### Fixed seeds per generation
+### Fixed Seeds Per Generation
 
 ```python
 _GEN_SEED_OFFSET = gen * 100 + 1
-# Tất cả genome đối mặt 6 layout giống hệt nhau trong 1 generation
+# All genomes face the same 6 layouts within a generation
 ```
 
-- **Trước đây**: Mỗi genome nhận seed ngẫu nhiên → genome giỏi gặp layout khó bị điểm thấp
-  → NEAT không biết genome nào thực sự tốt hơn → hội tụ chậm.
-- **Bây giờ**: Layout cố định trong 1 gen → so sánh công bằng → tiến hóa nhanh hơn.
+- **Before**: Random seeds per genome → good genomes got hard layouts → unfair comparison → slow convergence.
+- **Now**: Fixed layouts per generation → fair comparison → faster evolution.
 
 ---
 
-## 🚀 Hướng dẫn train
+## 🚀 Training Guide
 
-### Yêu cầu
+### Prerequisites
 
 ```bash
-pip install neat-python tqdm pygame  # pygame optional (cho replay)
+pip install neat-python tqdm pygame  # pygame optional (for replay)
 ```
 
-### Train cơ bản
+### Basic Training
 
 ```bash
-python train.py                  # 100 generations (mặc định)
+python train.py                  # 100 generations (default)
 python train.py 200              # 200 generations
-python train.py 500              # 500 generations (khuyến nghị cho kết quả tốt)
+python train.py 500              # 500 generations (recommended for best results)
 ```
 
 Output:
-- `logs/training.jsonl` — log từng generation
-- `logs/winner.pkl` — genome tốt nhất mọi thời đại
-- `logs/winner_net.json` — topology dạng JSON (cho web viz)
-- Terminal: best_fitness, mean_fitness, best_score, species count mỗi gen
+- `logs/training.jsonl` — per-generation log
+- `logs/winner.pkl` — all-time best genome (pickle)
+- `logs/winner_net.json` — best network topology (JSON)
+- Terminal: best_fitness, mean_fitness, best_score, species count each gen
 
-### Xem kết quả
+### Viewing Results
 
-**Web dashboard** (khuyến nghị):
+**Web dashboard** (recommended):
 ```bash
 python server.py              # http://127.0.0.1:8765/
-# Bấm A để chuyển sang AI mode, Space để chơi tay
+# Press A for AI mode, Space for manual play
 ```
 
-**Pygame replay** (máy tính):
+**Pygame replay** (desktop):
 ```bash
 python replay.py
-# ESC để thoát
+# ESC to quit
 ```
 
 ---
 
-## ⚙️ Tinh chỉnh thông số (cho độ chính xác tốt hơn)
+## ⚙️ Hyperparameter Tuning (for Better Accuracy)
 
-### 1. Cấu hình NEAT (`config-feedforward.txt`)
+### 1. NEAT Config (`config-feedforward.txt`)
 
 #### Population & Evolution
 
-| Tham số | Giá trị hiện tại | Gợi ý tinh chỉnh | Tác dụng |
+| Parameter | Current | Suggestion | Effect |
 |---|---|---|---|
-| `pop_size` | 400 | ↑ 500–800 | Đa dạng gene hơn, tốn thời gian hơn |
-| `elitism` | 2 | ↑ 3–5 | Giữ lại nhiều cá thể tốt hơn |
-| `survival_threshold` | 0.2 | ↑ 0.3–0.4 | Cho phép nhiều genome yếu sống sót (đa dạng) |
-| `no_fitness_termination` | True | Giữ nguyên | Không dừng sớm |
+| `pop_size` | 400 | ↑ 500–800 | More gene diversity, slower |
+| `elitism` | 2 | ↑ 3–5 | Keep more top performers |
+| `survival_threshold` | 0.2 | ↑ 0.3–0.4 | Allow more weaker genomes (diversity) |
+| `no_fitness_termination` | True | Keep as-is | Don't stop early |
 
-#### Đột biến
+#### Mutation
 
-| Tham số | Giá trị | Gợi ý | Tác dụng |
+| Parameter | Value | Suggestion | Effect |
 |---|---|---|---|
-| `conn_add_prob` | 0.5 | ↑ 0.7 nếu muốn mạng phức tạp hơn | Thêm kết nối mới |
-| `conn_delete_prob` | 0.3 | ↑ 0.5 nếu muốn prune mạng | Xóa kết nối thừa |
-| `node_add_prob` | 0.2 | ↑ 0.3–0.5 | Thêm node hidden |
-| `node_delete_prob` | 0.2 | Giữ hoặc ↓ 0.1 | Xóa node thừa |
-| `weight_mutate_rate` | 0.8 | ↓ 0.5 nếu đã gần hội tụ | Tinh chỉnh weight |
-| `weight_mutate_power` | 0.5 | ↓ 0.3 cho fine-tuning | Mức độ thay đổi weight |
-| `bias_mutate_rate` | 0.7 | Giữ hoặc ↓ 0.5 | Tinh chỉnh bias |
+| `conn_add_prob` | 0.5 | ↑ 0.7 for complexity | Add new connections |
+| `conn_delete_prob` | 0.3 | ↑ 0.5 to prune | Remove redundant connections |
+| `node_add_prob` | 0.2 | ↑ 0.3–0.5 | Add hidden nodes |
+| `node_delete_prob` | 0.2 | Keep or ↓ 0.1 | Remove redundant nodes |
+| `weight_mutate_rate` | 0.8 | ↓ 0.5 near convergence | Fine-tune weights |
+| `weight_mutate_power` | 0.5 | ↓ 0.3 for fine-tuning | Weight change magnitude |
+| `bias_mutate_rate` | 0.7 | Keep or ↓ 0.5 | Fine-tune biases |
 
 #### Species & Stagnation
 
-| Tham số | Giá trị | Gợi ý | Tác dụng |
+| Parameter | Value | Suggestion | Effect |
 |---|---|---|---|
-| `compatibility_threshold` | 3.0 | ↑ 4–5 (ít species hơn) | Gộp species tương tự |
-| `max_stagnation` | 20 | ↑ 30–40 | Cho species cơ hội hồi phục lâu hơn |
+| `compatibility_threshold` | 3.0 | ↑ 4–5 (fewer species) | Merge similar species |
+| `max_stagnation` | 20 | ↑ 30–40 | Give species more recovery time |
 
-### 2. Tham số trong code
+### 2. Code Parameters
 
-| Tham số | Vị trí | Giá trị | Gợi ý | Tác dụng |
+| Parameter | Location | Value | Suggestion | Effect |
 |---|---|---|---|---|
-| `num_runs` | `eval_genome()` | 6 | ↑ 10–12 | Test kỹ hơn, chậm hơn |
-| `num_runs` (post_evaluate) | `LogReporter` | 6 | Giống eval_genome | Đảm bảo so sánh công bằng |
-| `PIPE_GAP` | `game.py` | 140 | ± 20 | Độ khó — nhỏ hơn = khó hơn |
-| `PIPE_SPEED` | `game.py` | 2.0 | ± 0.5 | Tốc độ — nhanh hơn = khó hơn |
-| `max_frames` | `eval_genome()` | 5400 (60×90) | ↑ 7200 | Cho chim sống tối đa lâu hơn |
+| `num_runs` | `eval_genome()` | 6 | ↑ 10–12 | More thorough, slower |
+| `PIPE_GAP` | `game.py` | 140 | ± 20 | Difficulty — smaller = harder |
+| `PIPE_SPEED` | `game.py` | 2.0 | ± 0.5 | Speed — faster = harder |
+| `FLAP_COOLDOWN` | `game.py` | 3 | ± 1–2 | Control flap rate |
+| `max_frames` | `eval_genome()` | 5400 (60×90) | ↑ 7200 | Longer max survival |
 
-### 3. Fitness function
+### 3. Fitness Tuning
 
-Có thể điều chỉnh trong `eval_genome()`:
+Adjust in `eval_genome()`:
 
 ```python
-fitness += 0.1         # ↑ 0.2 → khuyến khích sống sót nhiều hơn
-fitness += 50          # ↑ 80 → khuyến khích vượt cột nhiều hơn
-fitness += centering * 10  # ↑ 20 → căn giữa chính xác hơn
+fitness += 0.1         # ↑ 0.2 → reward survival more
+fitness += 50          # ↑ 80 → reward pipe-passing more
+fitness += centering * 10  # ↑ 20 → tighter centering
 ```
 
-### 4. Thêm inputs
+### 4. Adding Inputs
 
-Nếu muốn cải thiện, có thể thêm input thứ 6 (VD: khoảng cách đến tâm khe hở):
+To improve, add a 6th input (e.g., distance to gap center):
 
 ```python
 # game.py → Bird.get_state()
@@ -253,113 +252,112 @@ Nếu muốn cải thiện, có thể thêm input thứ 6 (VD: khoảng cách đ
     (next_pipe.x - self.x) / SCREEN_W,
     (next_pipe.top) / PLAY_H,
     (next_pipe.bot) / PLAY_H,
-    (self.y - next_pipe.gap_y) / PLAY_H,  # input 6: offset từ tâm gap
+    (self.y - next_pipe.gap_y) / PLAY_H,  # input 6: offset from gap center
 )
 ```
 
-Nhớ cập nhật `num_inputs = 6` trong `config-feedforward.txt`.
+Update `num_inputs = 6` in `config-feedforward.txt`.
 
-### 5. Chiến lược train
+### 5. Training Strategy
 
-1. **Train nhanh (thăm dò)**: 100 gens, pop_size=200 → xem xu hướng
-2. **Train chính thức**: 400–500 gens, pop_size=400–600
-3. **Nếu stuck (plateau)**: Reset species bằng `reset_on_extinction = True`, hoặc
-   tăng `conn_add_prob` / `node_add_prob`
-4. **Nếu mạng quá phức tạp**: Tăng `conn_delete_prob`, giảm `node_add_prob`
+1. **Fast scan**: 100 gens, pop_size=200 → see trends
+2. **Main training**: 400–500 gens, pop_size=400–600
+3. **If stuck (plateau)**: Set `reset_on_extinction = True`, or increase `conn_add_prob`/`node_add_prob`
+4. **If network too complex**: Increase `conn_delete_prob`, decrease `node_add_prob`
 
 ---
 
-## 📡 Phương án triển khai
+## 📡 Deployment Options
 
-### 1. Local development (mặc định)
+### 1. Local Development (default)
 
 ```bash
 python train.py 400
 python server.py          # http://127.0.0.1:8765/
 ```
 
-### 2. Deploy lên server
+### 2. Server Deployment
 
-Có thể deploy lên VPS/dedicated server:
+Deploy to a VPS/dedicated server:
 
 ```bash
-# Cài đặt
+# Install
 pip install neat-python
 
 # Train (headless)
 python train.py 500
 
-# Serve trên port tùy ý
+# Serve on custom port
 python server.py 8080
 
-# Reverse proxy với nginx
+# Reverse proxy with nginx
 # server {
 #     listen 80;
-#     server_name flappyai.tenica.tech;
+#     server_name flappyai.example.com;
 #     location / {
 #         proxy_pass http://127.0.0.1:8080;
 #     }
 # }
 ```
 
-Các endpoints API:
-| Endpoint | Mô tả |
+API endpoints:
+| Endpoint | Description |
 |---|---|
 | `/` | Web dashboard (index.html) |
 | `/api/log` | Training log (JSON array) |
 | `/api/winner` | Winner network topology (JSON) |
 
-### 3. Cloudflare Tunnel (cho production)
+### 3. Cloudflare Tunnel (for production)
 
-Dùng Cloudflare Tunnel để expose web dashboard an toàn:
+Use Cloudflare Tunnel for secure public access:
 
 ```bash
-# Thêm DNS record
-cloudflared tunnel route dns <tunnel-id> flappyai.tenica.tech
+# Add DNS record
+cloudflared tunnel route dns <tunnel-id> flappyai.example.com
 
-# Thêm ingress vào /etc/cloudflared/config.yml
-#   - hostname: flappyai.tenica.tech
+# Add ingress to /etc/cloudflared/config.yml
+#   - hostname: flappyai.example.com
 #     service: http://localhost:8765
 
 # Reload cloudflared
 systemctl restart cloudflared
 ```
 
-### 4. Tích hợp CI/CD (GitHub Actions)
+### 4. CI/CD Integration (GitHub Actions)
 
-Có thể thiết lập GitHub Action train tự động hàng ngày:
+Set up automated daily training:
 1. Push code → GitHub
-2. Action chạy `python train.py 200` trên server
-3. Winner + logs push ngược về repo
-4. Dashboard cập nhật real-time
+2. Action runs `python train.py 200` on server
+3. Winner + logs push back to repo
+4. Dashboard updates in real-time
 
 ---
 
-## 📊 Kết quả thực nghiệm
+## 📊 Experimental Results
 
-| Metric | Random seeds | Fixed seeds (v1) | **Rising-edge + Center bonus** | Mô tả |
+| Metric | Random seeds | Fixed seeds (v1) | **With center bonus** | Description |
 |---|---|---|---|---|
-| Best score (avg 6runs) | 22.33 | 29.00 | **42.00** | Số cột trung bình |
-| Best generation | gen 168 | gen 158 | **gen 171** | Gen đạt best |
-| Winner hidden nodes | 1 | 8 | **~15** | Độ phức tạp mạng |
-| Winner fitness | ~1100 | ~1821 | **~2981** | Fitness cao nhất |
-| Validation (10 seeds) | 3.7 avg | 7.0 avg | **19.8 avg** | Trung bình 10 seed lạ |
-| Gen để ổn định > 20 pipes | ~120 | ~80 | **~37** | Tốc độ hội tụ |
-| Chất lượng bay | Rung lắc liên tục | Ổn định cơ bản | **Mượt, căn giữa gap** | Đụng cột trên/dưới |
+| Best score (avg 6 runs) | 22.33 | 29.00 | **42.00** | Average pipes passed |
+| Best generation | gen 168 | gen 158 | **gen 171** | Generation with best score |
+| Winner hidden nodes | 1 | 8 | **~15** | Network complexity |
+| Winner fitness | ~1100 | ~1821 | **~2981** | Peak fitness |
+| Validation (10 seeds) | 3.7 avg | 7.0 avg | **19.8 avg** | Unseen layout average pipe |
+| Gens to stabilize >20 pipes | ~120 | ~80 | **~37** | Convergence speed |
+| Flight quality | Constant jitter | Basic stability | **Smooth, centers gaps** | Top/bottom pipe hits |
 
-### Kết luận
+### Key Insights
 
-- **Fixed seeds per generation** là cải tiến quan trọng nhất — giúp so sánh genome
-  công bằng, tăng tốc hội tụ đáng kể.
-- **Rising-edge flap** giúp chim điều khiển chính xác hơn, không bay quá nhanh.
-- **Center bonus** khuyến khích chim căn giữa khe hở, giảm đụng cột.
-- `pop_size=400` và `num_runs=6` là cân bằng tốt giữa tốc độ và chất lượng.
-- **pop_size tăng lên 400** + species đa dạng (lên đến 44 species cuối gen)
-  giúp khám phá không gian giải pháp rộng hơn, tránh local optimum.
+- **Fixed seeds per generation** was the most important improvement — enabling fair
+  genome comparison and significantly boosting convergence speed.
+- **Center bonus** encourages passing through the gap center, reducing top/bottom collisions.
+- **Flap cooldown** prevents overshoot while keeping continuous flap for hidden-node evolution.
+- `pop_size=400` and `num_runs=6` strike a good balance between speed and quality.
+- **pop_size of 400** + species diversity (up to **44 species** by late generations)
+  helps explore the solution space more broadly, avoiding local optima.
 
 ---
 
-## 📁 Cấu trúc thư mục
+## 📁 Project Structure
 
 ```
 FlappyAI/
@@ -367,6 +365,7 @@ FlappyAI/
 ├── train.py                  # 🧬 NEAT training script
 ├── replay.py                 # 🎥 Pygame viewer
 ├── server.py                 # 🌐 Web server + API
+├── record_demo.py            # 🎬 Headless GIF recorder
 ├── config-feedforward.txt    # ⚙️ NEAT hyperparameters
 ├── requirements.txt          # 📦 Python dependencies
 ├── start.bat                 # 🪟 Windows menu
@@ -374,73 +373,75 @@ FlappyAI/
 │   ├── training.jsonl        #   Per-generation log
 │   ├── winner.pkl            #   Best genome (pickle)
 │   └── winner_net.json       #   Best network (JSON)
+├── docs/                     # 📁 Documentation assets
+│   └── demo.gif              #   Demo GIF
 ├── web/                      # 🌐 Dashboard frontend
 │   ├── index.html
 │   ├── style.css
 │   ├── flappy.js             #   Game engine (JS)
 │   └── app.js                #   Chart.js + NN viz + player
-└── README.md                 # 📘 This file
+├── README.md                 # 📘 This file (English)
+├── README.vi.md              # 📘 Vietnamese version
+└── LICENSE                   # MIT
 ```
 
 ---
 
 ## ❓ FAQ & Troubleshooting
 
-### "Training quá chậm"
+### "Training is too slow"
 
-- Giảm `pop_size` xuống 200–300
-- Giảm `num_runs` xuống 3–4
-- Tăng `max_fitness_threshold` để dừng sớm nếu đạt ngưỡng
+- Decrease `pop_size` to 200–300
+- Decrease `num_runs` to 3–4
 
-### "Chim luôn chết ở cột đầu tiên"
+### "Bird always dies at the first pipe"
 
-1. Chim bay vọt lên quá nhanh → **Đụng cột trên**
-   - **Fix**: Rising-edge flap detection (đã implement)
-   - Hoặc: giảm `FLAP_VY` trong game.py xuống -6
+1. Bird overshoots upward → **Hits top pipe**
+   - **Fix**: Flap cooldown (already implemented, 3 frames)
+   - Or: decrease `FLAP_VY` in game.py to -6
 
-2. Chim rơi xuống cột dưới → **Đụng cột dưới**
-   - **Fix**: Đảm bảo network có kết nối đến input `bot_y` và `velocity`
-   - Hoặc: tăng `PIPE_GAP` lên 150–160
+2. Bird drops onto bottom pipe → **Hits bottom pipe**
+   - **Fix**: Ensure network has connections to `bot_y` and `velocity` inputs
+   - Or: increase `PIPE_GAP` to 150–160
 
-3. Chim không biết cột đang đến gần
-   - **Fix**: Kiểm tra input `pipe_dx` có được kết nối trong network không (qua winner_net.json)
-   - Nếu không: thêm kết nối bằng cách tăng `conn_add_prob`
+3. Bird doesn't react to approaching pipes
+   - **Fix**: Check if `pipe_dx` input is connected in the network (via winner_net.json)
+   - If not: increase `conn_add_prob`
 
-### "Web dashboard không hiển thị"
+### "Web dashboard not showing"
 
 ```bash
-# Kiểm tra file tồn tại
+# Check files exist
 ls logs/winner_net.json logs/training.jsonl
 
-# Nếu thiếu: chạy train lại
+# If missing: retrain
 python train.py
 
-# Nếu lỗi port: dùng port khác
+# If port conflict: use a different port
 python server.py 8766
 ```
 
-### "Cần cải thiện score"
+### "Want to improve the score"
 
-Xem [Tinh chỉnh thông số](#-tinh-chỉnh-thông-số-cho-độ-chính-xác-tốt-hơn) ở trên.
+See [Hyperparameter Tuning](#-hyperparameter-tuning-for-better-accuracy) above.
 
-### "Muốn xem network topology"
+### "Want to see the network topology"
 
-Mở http://127.0.0.1:8765/ và xem SVG network visualization bên phải màn hình.
-Hoặc mở `logs/winner_net.json` bằng text editor.
+Open http://127.0.0.1:8765/ and view the SVG network visualization on the right.
+Or open `logs/winner_net.json` in any text editor.
 
 ---
 
 ## 📜 License
 
-MIT — xem [LICENSE](LICENSE).
+MIT — see [LICENSE](LICENSE).
 
-## 👨‍💻 Tác giả
+## 👨‍💻 Author
 
-Dự án được phát triển bởi [Nhqvu2005](https://github.com/Nhqvu2005) với sự hỗ trợ
-của Claude Code (Anthropic).
+**Nhqvu2005** — [GitHub](https://github.com/Nhqvu2005)
 
 ## 🙏 Credits
 
-- [NEAT-Python](https://neat-python.readthedocs.io/) — thư viện NEAT
-- [Kenneth O. Stanley](https://en.wikipedia.org/wiki/Neuroevolution_of_augmenting_topologies) — thuật toán NEAT
-- [Dong Nguyen](https://en.wikipedia.org/wiki/Flappy_Bird) — Flappy Bird gốc
+- [NEAT-Python](https://neat-python.readthedocs.io/) — NEAT library
+- [Kenneth O. Stanley](https://en.wikipedia.org/wiki/Neuroevolution_of_augmenting_topologies) — NEAT algorithm
+- [Dong Nguyen](https://en.wikipedia.org/wiki/Flappy_Bird) — Original Flappy Bird
