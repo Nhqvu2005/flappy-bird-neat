@@ -7,6 +7,7 @@ let mode = "manual";                 // "manual" | "ai"
 let bestScore = parseInt(localStorage.getItem("flappyai_best") || "0");
 let winnerNet = null;                // loaded from /api/winner
 let resetTimer = null;
+let _prevAIOutput = 0.0;          // for rising-edge flap detection
 
 const canvas = document.getElementById("game");
 const ctx    = canvas.getContext("2d");
@@ -180,7 +181,10 @@ function loop(t) {
   if (game.bird.alive) {
     if (mode === "ai" && winnerNet) {
       const out = activate(winnerNet, game.getState());
-      game.step(out[0] > 0.5);
+      // Rising-edge: flap only on transition from ≤0.5 to >0.5
+      const flap = _prevAIOutput <= 0.5 && out[0] > 0.5;
+      _prevAIOutput = out[0];
+      game.step(flap);
     } else if (mode === "manual") {
       game.step(false);   // manual only advances via input; gravity handled in step(false)
     }

@@ -23,7 +23,7 @@ try:
 except ImportError:
     tqdm = None
 
-from game import Game, Bird, SCREEN_H, SCREEN_W, PLAY_H, PIPE_W, PIPE_SPACING
+from game import Game, Bird, SCREEN_H, SCREEN_W, PLAY_H, PIPE_W, PIPE_GAP, PIPE_SPACING
 
 
 
@@ -88,7 +88,9 @@ def set_gen_seeds(gen):
 
 def eval_genome(genome, config, num_runs=6):
     """Play a bird; return (avg_fitness, avg_score).
-    Fitness = score * 50 + frames_alive * 0.1
+    Uses rising-edge flap detection — only flaps when output crosses > 0.5
+    (like a button press, not a button hold). This prevents overshoot.
+    Fitness = score * 50 + center_bonus + frames_alive * 0.1
     Each genome is tested against num_runs DIFFERENT pipe layouts.
     Uses FIXED seeds per generation (all genomes face the same layouts)
     so the resulting network GENERALIZES instead of memorizing one layout."""
@@ -101,16 +103,25 @@ def eval_genome(genome, config, num_runs=6):
         game = Game(seed=_GEN_SEED_OFFSET + run_i)
         fitness = 0.0
         prev_score = 0
+        prev_out = 0.0  # for rising-edge detection
         for _ in range(max_frames):
             if not game.bird.alive:
                 break
-            state = game.bird.get_state(game.next_pipe())
+            np = game.next_pipe()
+            state = game.bird.get_state(np)
             out = net.activate(state)
-            flap = out[0] > 0.5
+            # Rising-edge: flap only when output crosses 0.5 upward
+            flap = prev_out <= 0.5 < out[0]
+            prev_out = out[0]
             game.step(flap)
             fitness += 0.1
             if game.bird.score > prev_score:
+                # Base pipe-passing reward
                 fitness += 50
+                # Center bonus: encourage passing through middle of gap
+                dist = abs(game.bird.y - np.gap_y)
+                centering = max(0, 1.0 - dist / (PIPE_GAP * 0.5))
+                fitness += centering * 10
                 prev_score = game.bird.score
         total_fitness += fitness
         total_score += game.bird.score
@@ -230,12 +241,15 @@ def main():
     for seed in val_seeds:
         game = Game(seed=seed)
         net = neat.nn.FeedForwardNetwork.create(winner, config)
+        prev_out = 0.0
         for _ in range(5400):
             if not game.bird.alive:
                 break
             state = game.bird.get_state(game.next_pipe())
             out = net.activate(state)
-            game.step(out[0] > 0.5)
+            flap = prev_out <= 0.5 < out[0]
+            prev_out = out[0]
+            game.step(flap)
         total_score += game.bird.score
     avg_final_score = total_score / 10
     print(f"  Validation avg score: {avg_final_score:.1f}  (range: call python train.py for details)")

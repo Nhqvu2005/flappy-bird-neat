@@ -169,6 +169,7 @@ def main():
                 pass
 
     alive = True
+    prev_out = 0.0
     while True:
         for ev in pygame.event.get():
             if ev.type == pygame.QUIT:
@@ -179,7 +180,9 @@ def main():
         if game.bird.alive:
             state = game.bird.get_state(game.next_pipe())
             out = net.activate(state)
-            game.step(out[0] > 0.5)
+            flap = prev_out <= 0.5 < out[0]
+            prev_out = out[0]
+            game.step(flap)
         else:
             # Auto-reset so the replay keeps going
             pygame.time.wait(700)
