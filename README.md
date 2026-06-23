@@ -13,7 +13,7 @@
 <p align="center">
   <img src="docs/demo.gif" alt="Flappy AI Demo" width="300">
   <br>
-  <em>AI playing Flappy Bird — achieved 27 avg pipes (gen 140)</em>
+  <em>AI playing Flappy Bird — achieved 42 avg pipes (gen 329)</em>
 </p>
 
 ---
@@ -335,25 +335,25 @@ Set up automated daily training:
 
 ## Experimental Results
 
-| Metric | Random seeds | Fixed seeds (v1) | **Center bonus + cooldown** | Description |
+| Metric | Random seeds | Fixed seeds (v1) | **Rising-edge + tuning** | Description |
 |---|---|---|---|---|
-| Best score (avg 6 runs) | 22.33 | 29.00 | **27.33** | Average pipes passed |
-| Best generation | gen 168 | gen 158 | **gen 140** | Generation with best score |
-| Winner hidden nodes | 1 | 8 | **1** | Network complexity |
-| Winner fitness | ~1100 | ~1821 | **~1929** | Peak fitness |
-| Validation (10 seeds) | 3.7 avg | 7.0 avg | **19.8 avg** | Unseen layout average pipe |
+| Best score (avg 6 runs) | 22.33 | 29.00 | **42.00** | Average pipes passed |
+| Best generation | gen 168 | gen 158 | **gen 329** | Generation with best score |
+| Winner hidden nodes | 1 | 8 | **5** | Network complexity |
+| Winner fitness | ~1100 | ~1821 | **~2974** | Peak fitness |
+| Validation (10 seeds) | 3.7 avg | 7.0 avg | **26.1 avg** | Unseen layout average pipe |
 | Gens to stabilize >20 pipes | ~120 | ~80 | **~37** | Convergence speed |
-| Flight quality | Constant jitter | Basic stability | **Smooth with cooldown** | Top/bottom pipe hits |
+| Flight quality | Constant jitter | Basic stability | **Smooth, rising-edge** | Top/bottom pipe hits |
 
 ### Key Insights
 
 - **Fixed seeds per generation** was the most important improvement — enabling fair
   genome comparison and significantly boosting convergence speed.
 - **Center bonus** encourages passing through the gap center, reducing top/bottom collisions.
-- **Flap cooldown** prevents overshoot while keeping continuous flap for hidden-node evolution.
-- **Continuous flap + cooldown** produces more robust networks that generalize better to unseen seeds.
+- **Rising-edge flap** naturally prevents rapid re-flapping and produces higher scores.
+  Combined with the center bonus, the network learns to time flaps precisely.
 - `pop_size=400` and `num_runs=6` strike a good balance between speed and quality.
-- **pop_size of 400** + species diversity (up to **22 species** by late generations)
+- **pop_size of 400** + species diversity (up to **23 species** by late generations)
   helps explore the solution space more broadly, avoiding local optima.
 
 ---
