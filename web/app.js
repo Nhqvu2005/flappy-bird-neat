@@ -176,11 +176,14 @@ function render(t) {
 }
 
 // ----- Main loop -----
+let _prevAIOutput = 0.0;
 function loop(t) {
   if (game.bird.alive) {
     if (mode === "ai" && winnerNet) {
       const out = activate(winnerNet, game.getState());
-      game.step(out[0] > 0.5);
+      const flap = _prevAIOutput <= 0.5 && out[0] > 0.5;
+      _prevAIOutput = out[0];
+      game.step(flap);
     } else if (mode === "manual") {
       game.step(false);   // manual only advances via input; gravity handled in step(false)
     }

@@ -88,8 +88,8 @@ def set_gen_seeds(gen):
 
 def eval_genome(genome, config, num_runs=6):
     """Play a bird; return (avg_fitness, avg_score).
-    Continuous flap — bird flaps whenever output > 0.5 (can flap multiple times).
-    This keeps the network complex enough to handle difficult situations.
+    Rising-edge flap — bird flaps only when output crosses 0.5 (prev <= 0.5 < out).
+    This naturally prevents rapid re-flapping and produces higher scores.
     Fitness = score * 50 + center_bonus + frames_alive * 0.1
     Each genome is tested against num_runs DIFFERENT pipe layouts.
     Uses FIXED seeds per generation (all genomes face the same layouts)
@@ -103,13 +103,15 @@ def eval_genome(genome, config, num_runs=6):
         game = Game(seed=_GEN_SEED_OFFSET + run_i)
         fitness = 0.0
         prev_score = 0
+        prev_out = 0.0
         for _ in range(max_frames):
             if not game.bird.alive:
                 break
             np = game.next_pipe()
             state = game.bird.get_state(np)
             out = net.activate(state)
-            flap = out[0] > 0.5  # continuous flap
+            flap = prev_out <= 0.5 < out[0]  # rising-edge
+            prev_out = out[0]
             game.step(flap)
             fitness += 0.1
             if game.bird.score > prev_score:
@@ -238,12 +240,15 @@ def main():
     for seed in val_seeds:
         game = Game(seed=seed)
         net = neat.nn.FeedForwardNetwork.create(winner, config)
+        prev_out = 0.0
         for _ in range(5400):
             if not game.bird.alive:
                 break
             state = game.bird.get_state(game.next_pipe())
             out = net.activate(state)
-            game.step(out[0] > 0.5)
+            flap = prev_out <= 0.5 < out[0]
+            prev_out = out[0]
+            game.step(flap)
         total_score += game.bird.score
     avg_final_score = total_score / 10
     print(f"  Validation avg score: {avg_final_score:.1f}  (range: call python train.py for details)")
